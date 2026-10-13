@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Formal Wise helps fraternities and sororities plan smarter destination formals with hotel negotiation, transportation, venues, budgets, group coordination, and itineraries.">
+  <title>Formal Wise | Smarter Formal Planning</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav wrap">
+      <a class="brand" href="#top" aria-label="Formal Wise home">FORMAL <span>WISE</span></a>
+      <a class="nav-cta" href="#plan">START PLANNING</a>
+    </nav>
+
+    <div class="hero-content wrap" id="top">
+      <p class="eyebrow">SMARTER GROUP TRAVEL • BETTER VALUE</p>
+      <h1>Better Formals.<br>Better Destinations.<br><em>Better Prices.</em></h1>
+      <p class="hero-copy">Smarter planning for unforgettable fraternity and sorority formals. From hotels and transportation to venues, budgets, and itineraries, Formal Wise helps your chapter simplify the process and find ways to keep group costs down.</p>
+      <a class="button primary" href="#plan">START PLANNING YOUR FORMAL <span>→</span></a>
+    </div>
+
+    <div class="skyline" aria-hidden="true">
+      <span style="--x:2%;--w:7%;--h:42%"></span><span style="--x:10%;--w:4%;--h:62%"></span>
+      <span style="--x:15%;--w:9%;--h:36%"></span><span style="--x:25%;--w:5%;--h:72%"></span>
+      <span style="--x:31%;--w:10%;--h:48%"></span><span style="--x:42%;--w:6%;--h:82%"></span>
+      <span style="--x:49%;--w:8%;--h:55%"></span><span style="--x:58%;--w:5%;--h:68%"></span>
+      <span style="--x:64%;--w:11%;--h:43%"></span><span style="--x:76%;--w:6%;--h:76%"></span>
+      <span style="--x:83%;--w:7%;--h:52%"></span><span style="--x:91%;--w:8%;--h:34%"></span>
+    </div>
+  </header>
+
+  <main>
+    <section class="intro wrap">
+      <p class="eyebrow dark">ONE PLAN. FEWER HEADACHES.</p>
+      <h2>Everything your chapter needs,<br><em>organized in one place.</em></h2>
+      <p class="lead">Formal Wise provides independent planning and coordination support so your chapter can spend less time chasing details and more time looking forward to the trip.</p>
+
+      <div class="services">
+        <article><b>01</b><h3>Hotels & Resorts</h3><p>Research group options and help negotiate rates, room blocks, and group terms.</p></article>
+        <article><b>02</b><h3>Transportation</h3><p>Coordinate practical transportation options around your group size and itinerary.</p></article>
+        <article><b>03</b><h3>Venues</h3><p>Help identify event spaces and destination options that fit your formal.</p></article>
+        <article><b>04</b><h3>Budget Planning</h3><p>Build a clearer cost picture and look for opportunities to keep per-person costs down.</p></article>
+        <article><b>05</b><h3>Group Coordination</h3><p>Keep attendance, rooms, deadlines, and planning details organized.</p></article>
+        <article><b>06</b><h3>Itineraries</h3><p>Turn the moving pieces into a simple trip plan your chapter can follow.</p></article>
+      </div>
+    </section>
+
+    <section class="destinations">
+      <div class="wrap">
+        <p class="eyebrow">DESTINATIONS</p>
+        <h2>Go somewhere worth remembering.</h2>
+        <div class="destination-list">
+          <span>LAS VEGAS</span><span>SAN DIEGO</span><span>PUERTO PEÑASCO</span><span>NEW ORLEANS</span>
+          <span>HAWAII</span><span>LAKE HAVASU</span><span>MIAMI</span><span>YOUR IDEA →</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="plan wrap" id="plan">
+      <div class="form-heading">
+        <div>
+          <p class="eyebrow dark">LET'S BUILD YOUR TRIP</p>
+          <h2>Start planning<br><em>your formal.</em></h2>
+        </div>
+        <p>Tell us what you have in mind. The more you know now, the easier it is to start building a smart plan. Not sure about something yet? That's okay.</p>
+      </div>
+
+      <!-- FORM SETUP:
+           Replace YOUR_FORMSPREE_ID in the action below after creating a free Formspree form.
+           Your private receiving email is NOT stored in this public website code. -->
+      <form class="inquiry-form" action="https://formspree.io/f/YOUR_FORMSPREE_ID" method="POST">
+        <input type="hidden" name="_subject" value="New Formal Wise Inquiry">
+
+        <div class="field"><label for="name">Full Name *</label><input id="name" name="Full Name" required autocomplete="name"></div>
+        <div class="field"><label for="org">Fraternity / Sorority *</label><input id="org" name="Fraternity or Sorority" required></div>
+        <div class="field"><label for="school">School / University *</label><input id="school" name="School or University" required></div>
+        <div class="field"><label for="position">Position in Organization</label><input id="position" name="Position" placeholder="e.g. Social Chair"></div>
+        <div class="field"><label for="email">Email *</label><input id="email" type="email" name="Email" required autocomplete="email"></div>
+        <div class="field"><label for="phone">Phone Number *</label><input id="phone" type="tel" name="Phone Number" required autocomplete="tel"></div>
+        <div class="field"><label for="attendees">Estimated Attendees *</label><input id="attendees" type="number" min="1" name="Estimated Attendees" required></div>
+        <div class="field"><label for="rooms">Estimated Rooms</label><input id="rooms" type="number" min="0" name="Estimated Rooms"></div>
+        <div class="field"><label for="budget">Approximate Budget <span>(optional)</span></label><input id="budget" name="Approximate Budget" placeholder="e.g. $30,000 or $250/person"></div>
+        <div class="field"><label for="dates">Desired Dates / Semester *</label><input id="dates" name="Desired Dates or Semester" placeholder="e.g. April 9–11, 2027" required></div>
+
+        <div class="field full">
+          <label for="destination">Destination *</label>
+          <select id="destination" name="Destination" required>
+            <option value="" selected disabled>Select a destination</option>
+            <option>Las Vegas</option><option>San Diego</option><option>Puerto Peñasco</option>
+            <option>New Orleans</option><option>Hawaii</option><option>Lake Havasu</option>
+            <option>Miami</option><option>Other</option>
+          </select>
+        </div>
+        <div class="field full hidden" id="other-wrap"><label for="other">Where are you thinking?</label><input id="other" name="Other Destination"></div>
+
+        <fieldset class="full">
+          <legend>What do you need help with?</legend>
+          <div class="checks">
+            <label><input type="checkbox" name="Needs" value="Hotel / Resort"> Hotel / Resort</label>
+            <label><input type="checkbox" name="Needs" value="Transportation"> Transportation</label>
+            <label><input type="checkbox" name="Needs" value="Venue / Event"> Venue / Event</label>
+            <label><input type="checkbox" name="Needs" value="Budget Planning"> Budget Planning</label>
+            <label><input type="checkbox" name="Needs" value="Group Coordination"> Group Coordination</label>
+            <label><input type="checkbox" name="Needs" value="Itinerary"> Itinerary</label>
+          </div>
+        </fieldset>
+
+        <div class="field full"><label for="details">Anything else we should know?</label><textarea id="details" name="Additional Details" rows="5" placeholder="Tell us about your goals, priorities, current plans, or any questions."></textarea></div>
+
+        <label class="consent full"><input type="checkbox" required> <span>I understand this is a planning inquiry and does not constitute a reservation or guarantee of pricing or availability. *</span></label>
+        <p class="privacy full">Your information is used only to respond to your inquiry and coordinate planning. Formal Wise does not display your contact information publicly.</p>
+
+        <button class="button submit full" type="submit">SEND MY FORMAL INQUIRY <span>→</span></button>
+      </form>
+    </section>
+  </main>
+
+  <footer>
+    <div class="wrap footer-inner">
+      <div class="brand">FORMAL <span>WISE</span></div>
+      <p>Independent formal planning & coordination for fraternities and sororities.</p>
+      <p>© <span id="year"></span> Formal Wise</p>
+    </div>
+  </footer>
+  <script src="script.js"></script>
+</body>
+</html>
