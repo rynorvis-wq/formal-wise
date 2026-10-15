@@ -1,0 +1,926 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="format-detection" content="telephone=no">
+<title>Formal Wise</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Manrope:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: one app column; a test-mode role bar on top, member screens with a bottom tab bar, planner/admin as wider single-column consoles. */
+:root{
+  --bg:#F3F4F7; --surface:#FFFFFF; --ink:#101B33; --muted:#545D72; --line:#E1E4EB; --soft:#EDF0F5;
+  --hero:#101B33; --on-hero:#FFFFFF; --on-hero-muted:#C9CFDB;
+  --gold:#C9963A; --gold-ink:#7E5A17; --ok:#1F5FBF; --warn:#A9520D; --warn-bg:#FCF1E4;
+  --btn:#101B33; --on-btn:#FFFFFF;
+  --display:"Fraunces", Georgia, "Times New Roman", serif;
+  --body:"Manrope", system-ui, -apple-system, "Segoe UI", sans-serif;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0B1222; --surface:#141D33; --ink:#EEF1F7; --muted:#A3ACBF; --line:#26324F; --soft:#1B2642;
+  --hero:#1C2949; --on-hero:#FFFFFF; --on-hero-muted:#C2CADB;
+  --gold:#D9A94F; --gold-ink:#E6BD6C; --ok:#86ADF2; --warn:#F2A766; --warn-bg:#2F2213;
+  --btn:#EEF1F7; --on-btn:#0B1222; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0B1222; --surface:#141D33; --ink:#EEF1F7; --muted:#A3ACBF; --line:#26324F; --soft:#1B2642;
+  --hero:#1C2949; --on-hero:#FFFFFF; --on-hero-muted:#C2CADB;
+  --gold:#D9A94F; --gold-ink:#E6BD6C; --ok:#86ADF2; --warn:#F2A766; --warn-bg:#2F2213;
+  --btn:#EEF1F7; --on-btn:#0B1222; color-scheme:dark}
+html,body{height:100%}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45}
+*{box-sizing:border-box}
+button,input,select,textarea{font:inherit;color:inherit}
+button{cursor:pointer}
+:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+h1,h2,h3{margin:0;text-wrap:balance}
+.rolebar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-block:8px;padding-left:max(16px,var(--safe-area-inset-left,env(safe-area-inset-left,0px)));padding-right:max(16px,var(--safe-area-inset-right,env(safe-area-inset-right,0px)))}
+.rolebar-in{max-width:1040px;margin:0 auto;display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between}
+.tm{font-size:11px;font-weight:700;letter-spacing:.12em;color:var(--muted)}
+.seg{display:flex;gap:4px;background:var(--soft);padding:4px;border-radius:14px}
+.seg button{min-height:40px;padding:0 14px;border:none;border-radius:10px;background:transparent;font-weight:700;font-size:14px}
+.seg button[aria-pressed="true"]{background:var(--btn);color:var(--on-btn)}
+.wrap{padding-block:20px 120px;padding-left:max(16px,var(--safe-area-inset-left,env(safe-area-inset-left,0px)));padding-right:max(16px,var(--safe-area-inset-right,env(safe-area-inset-right,0px)))}
+.col{margin:0 auto;display:flex;flex-direction:column;gap:16px}
+.col.narrow{max-width:520px}.col.wide{max-width:1040px}
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--muted);text-transform:uppercase}
+.h1{font-family:var(--display);font-weight:500;font-size:32px;line-height:1.1}
+.h1 em{font-style:italic}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:18px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.card.strong{border:2px solid var(--ink)}
+.hero{background:var(--hero);color:var(--on-hero);border-radius:20px;padding:22px;display:flex;flex-direction:column;gap:16px}
+.hero .eyebrow{color:var(--on-hero-muted)}
+.hero .place{font-family:var(--display);font-size:34px;line-height:1.05;font-weight:500}
+.hero .place em{color:var(--gold);font-style:italic}
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:10px}
+.tile{background:rgba(255,255,255,.08);border-radius:14px;padding:12px}
+.tile b{display:block;font-family:var(--display);font-size:28px;font-weight:600;font-variant-numeric:tabular-nums}
+.tile span{font-size:12px;color:var(--on-hero-muted)}
+.countdown{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.14);border-radius:20px;padding:14px 12px 16px;display:flex;flex-direction:column;gap:10px}
+.cd-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:4px;text-align:center}
+.cd-grid b{display:block;font-family:var(--display);font-size:clamp(24px,7.5vw,34px);font-weight:600;line-height:1;font-variant-numeric:tabular-nums}
+.cd-grid span{display:block;margin-top:5px;font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--on-hero-muted)}
+.cd-cap{text-align:center;font-size:15px;line-height:1.45;color:var(--on-hero-muted)}
+.cd-ev{display:block;font-size:19px;font-weight:700;color:var(--on-hero);margin-top:2px}
+.cd-when{display:block;font-size:16px;font-weight:600;color:var(--on-hero)}
+.cd-none{text-align:center;font-family:var(--display);font-size:24px;padding:6px 0}
+.stat{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:16px;display:flex;flex-direction:column;gap:4px}
+.stat b{font-family:var(--display);font-size:30px;font-weight:500;font-variant-numeric:tabular-nums}
+.stat span{font-size:13px;color:var(--muted);font-weight:600}
+.btn{min-height:48px;padding:0 18px;border-radius:24px;border:1px solid var(--btn);background:var(--btn);color:var(--on-btn);font-weight:700;font-size:15px;display:inline-flex;align-items:center;justify-content:center;gap:8px}
+.btn.ghost{background:var(--surface);color:var(--ink);border-color:var(--ink)}
+.btn.gold{background:var(--gold);border-color:var(--gold);color:#101B33}
+.btn.sm{min-height:40px;padding:0 14px;font-size:14px}
+.btn.danger{background:var(--surface);color:var(--warn);border-color:var(--warn)}
+.btn[disabled]{opacity:.5;cursor:default}
+.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.between{display:flex;flex-wrap:wrap;gap:10px;justify-content:space-between;align-items:center}
+.field{display:flex;flex-direction:column;gap:6px;min-width:0}
+.field label{font-size:13px;font-weight:700;color:var(--muted)}
+.input{min-height:48px;width:100%;border-radius:12px;border:1px solid var(--line);background:var(--surface);padding:0 14px;font-size:16px}
+textarea.input{min-height:90px;padding:12px 14px;resize:vertical}
+.grid2{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:12px}
+.pill{display:inline-flex;align-items:center;min-height:26px;padding:0 10px;border-radius:13px;font-size:12px;font-weight:700;background:var(--soft);color:var(--ink)}
+.pill.ok{color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}
+.muted{color:var(--muted)}.small{font-size:13px}
+.note{background:var(--warn-bg);color:var(--warn);border-radius:14px;padding:12px 14px;font-size:14px;font-weight:600}
+.info{background:var(--soft);border-radius:14px;padding:12px 14px;font-size:14px;color:var(--ink)}
+.list{display:flex;flex-direction:column}
+.li{display:flex;align-items:center;gap:12px;min-height:56px;padding:8px 0;border-top:1px solid var(--line)}
+.li:first-child{border-top:none}
+.av{width:38px;height:38px;flex:none;border-radius:19px;background:var(--soft);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700}
+.grow{flex:1;min-width:0}
+.todo{display:flex;align-items:center;gap:12px;min-height:52px;width:100%;background:none;border:none;border-top:1px solid var(--line);text-align:left;padding:6px 0}
+.check{width:24px;height:24px;flex:none;border-radius:12px;border:2px solid var(--line);display:flex;align-items:center;justify-content:center}
+.check.on{background:var(--ink);border-color:var(--ink);color:var(--bg)}
+.groups{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.group{border:1px solid var(--line);border-radius:14px;padding:12px;display:flex;flex-direction:column;gap:8px;background:var(--surface)}
+.group.mine{border:2px solid var(--ink)}
+.codes{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.code{font-family:ui-monospace,"SF Mono",Menlo,Consolas,monospace;font-weight:700;letter-spacing:.06em;background:var(--soft);border-radius:10px;padding:8px 10px;display:flex;justify-content:space-between;align-items:center;gap:6px;min-height:44px;border:none;width:100%;text-align:left}
+details.fold>summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;gap:10px;min-height:44px}
+details.fold>summary::-webkit-details-marker{display:none}
+details.fold .chev{width:10px;height:10px;border-right:2px solid var(--muted);border-bottom:2px solid var(--muted);transform:rotate(45deg);transition:transform .15s;flex:none;margin-right:6px}
+details.fold[open] .chev{transform:rotate(-135deg)}
+.tablewrap{overflow-x:auto;min-width:0;max-width:100%}
+table{width:100%;min-width:720px;border-collapse:collapse;font-size:14px}
+th{text-align:left;font-size:12px;letter-spacing:.06em;color:var(--muted);padding:10px 8px;border-bottom:1px solid var(--line)}
+td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:top}
+.tabs{position:fixed;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--line);padding-top:6px;padding-bottom:calc(8px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));padding-left:max(8px,var(--safe-area-inset-left,env(safe-area-inset-left,0px)));padding-right:max(8px,var(--safe-area-inset-right,env(safe-area-inset-right,0px)))}
+.tabs-in{max-width:520px;margin:0 auto;display:grid;grid-template-columns:repeat(5,minmax(0,1fr))}
+.tabs button{min-height:52px;border:none;background:none;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;font-size:11px;font-weight:600;color:var(--muted)}
+.tabs button[aria-current="page"]{color:var(--ink);font-weight:800}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(92px + var(--safe-area-inset-bottom,env(safe-area-inset-bottom,0px)));z-index:9;background:var(--btn);color:var(--on-btn);padding:12px 18px;border-radius:14px;font-weight:600;font-size:14px;max-width:min(92vw,460px);box-shadow:0 8px 24px rgba(0,0,0,.18)}
+.join{min-height:calc(100vh - 140px);display:flex;flex-direction:column;justify-content:center;gap:20px}
+.big{font-family:var(--display);font-size:44px;line-height:1.05;font-weight:500}
+.big em{font-style:italic;color:var(--gold-ink)}
+.codein{min-height:58px;font-size:20px;font-weight:700;letter-spacing:.12em;text-transform:uppercase}
+.dayh{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--gold-ink);padding-top:10px}
+.ev{display:flex;gap:14px;padding:12px 0;border-top:1px solid var(--line)}
+.ev .t{width:76px;flex:none;font-weight:700;font-variant-numeric:tabular-nums}
+.roomshow{display:flex;justify-content:space-between;align-items:center;gap:12px;margin:0 0 10px 50px;padding:12px 14px;border-radius:12px;background:var(--hero);color:var(--on-hero)}
+.roomshow b{font-family:var(--display);font-size:26px;font-weight:600}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.loading{padding:40px 0;text-align:center;color:var(--muted)}
+@media (prefers-reduced-motion: no-preference){.toast{animation:pop .18s ease-out}@keyframes pop{from{opacity:0;transform:translate(-50%,8px)}to{opacity:1;transform:translate(-50%,0)}}}
+.linkbtn{background:none;border:none;padding:8px 0;min-height:44px;font-weight:700;color:var(--ink);text-decoration:underline;text-underline-offset:3px;text-align:left}
+body{margin:0;-webkit-tap-highlight-color:transparent}
+[hidden]{display:none!important}
+/* Phones: keep content clear of the status bar / notch. */
+.rolebar{padding-top:calc(8px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+.wrap{padding-top:calc(20px + var(--safe-area-inset-top,env(safe-area-inset-top,0px)))}
+body.has-top .wrap{padding-top:20px}
+</style>
+<script src="config.js"></script>
+<script src="vendor/supabase.js"></script>
+</head>
+<body>
+<div class="rolebar" id="topbar" hidden><div class="rolebar-in">
+  <div style="min-width:0"><div class="tm">FORMAL WISE</div><div class="small muted" id="who" style="overflow-wrap:anywhere"></div></div>
+  <div class="row"><div class="seg" role="group" aria-label="View as" id="roles"></div><button class="btn ghost sm" data-act="staffout">Sign out</button></div>
+</div></div>
+<div class="wrap"><div id="view" class="col narrow"><div class="loading">Loading…</div></div></div>
+<nav class="tabs" id="tabs" aria-label="Member" hidden><div class="tabs-in" id="tabs-in"></div></nav>
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(function(){
+/* Data comes from Supabase. Every read and write goes through fw_* database functions,
+   which check who is signed in: members sign in anonymously and claim a code; planners and admins sign in with an emailed code. */
+const st={role:'guest',email:null,me:null,tab:'home',trips:{},codes:{},members:{},loaded:false,netErr:false,fatal:'',
+  view:'admin',screen:'join',staff:{step:'email',email:''},
+  plannerTrip:'',adminOpen:{},confirm:'',openPerson:'',q:'',detail:'',busy:'',signedOut:false};
+function ls(k){try{return localStorage.getItem(k)}catch(e){return null}}
+function lsSet(k,v){try{v==null?localStorage.removeItem(k):localStorage.setItem(k,v)}catch(e){}}
+st.view=ls('fw.view')==='planner'?'planner':'admin';
+let sb=null,pending=false,lastSig='';
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const $=id=>document.getElementById(id);
+const initials=n=>(n||'?').split(/\s+/).filter(Boolean).slice(0,2).map(w=>w[0]).join('').toUpperCase();
+let toastT;
+function toast(msg){const t=$('toast');t.textContent=msg;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>{t.hidden=true},3600)}
+function failMsg(e){
+  if(e&&e.code==='P0001'&&e.message)return e.message;
+  if(e&&e.friendly)return e.message;
+  if(e&&/jwt|token|session/i.test(e.message||''))return 'Your sign-in expired. Sign in again.';
+  return 'That didn’t save. Check your connection and try again.'}
+
+/* ---------- server ---------- */
+async function api(fn,payload){
+  if(!sb)throw new Error('offline');
+  const {data,error}=await sb.rpc('fw_'+fn,{p:payload||{}});
+  if(error){const e=new Error(error.message||'Request failed');e.code=error.code;throw e}
+  return data;
+}
+async function hasSession(){try{const r=await sb.auth.getSession();return !!(r&&r.data&&r.data.session)}catch(e){return false}}
+function applyState(d){
+  st.role=d.role||'guest';st.email=d.email||null;st.me=d.me||null;
+  st.trips=d.trips||{};st.codes=d.codes||{};st.members=d.members||{};
+  if(st.role==='guest'&&ls('fw.lastCode')){st.signedOut=true;lsSet('fw.lastCode',null)}
+  if(st.role==='member')st.signedOut=false;
+}
+function applyGuest(){applyState({role:'guest'})}
+/* Load everything this person is allowed to see. Re-renders only when something changed. */
+async function load(force){
+  let d;
+  if(!(await hasSession()))d={role:'guest'};
+  else d=await api('get_state',{});
+  const sig=JSON.stringify(d);
+  st.netErr=false;
+  if(!force&&sig===lastSig&&st.loaded)return;
+  lastSig=sig;applyState(d);st.loaded=true;schedule();
+}
+async function refresh(){try{await load(true)}catch(e){}}
+async function call(fn,payload,msg){const r=await api(fn,payload);await refresh();pending=false;render();if(msg)toast(typeof msg==='function'?msg(r):msg);return r}
+const upd=(tid,patch,msg)=>call('update_trip',{trip:tid,patch},msg);
+/* Planner invite emails go out through the invite-planner Edge Function (it holds the Resend key, the app never does). */
+async function sendInvites(tid,emails,force){
+  let r;
+  try{const {data,error}=await sb.functions.invoke('invite-planner',{body:{trip:tid,emails:emails||null,force:!!force}});if(error)throw error;r=data||{}}
+  catch(e){r={error:true}}
+  await refresh();pending=false;render();return r}
+function inviteMsg(r){
+  if(!r||r.error||(r.failed&&r.failed.length&&!(r.sent||[]).length))return ' The invite email didn’t send. Use Send invite on the trip to try again.';
+  if((r.sent||[]).length)return ' Invite emailed to '+r.sent.join(', ')+'.';
+  return ''}
+
+/* ---------- data helpers ---------- */
+const tripCodes=id=>Object.entries(st.codes).filter(([,c])=>c.tripId===id).map(([k,c])=>Object.assign({id:k},c)).sort((a,b)=>a.id.localeCompare(b.id));
+const tripMembers=id=>Object.entries(st.members).filter(([,m])=>m.tripId===id).map(([k,m])=>Object.assign({id:k},m));
+const youDone=m=>!!(m&&m.you&&['name','dob','phone','ecName','ecPhone'].every(k=>m.you[k]));
+const dateDone=m=>!!(m&&(m.solo||(m.date&&['name','dob','phone','ecName','ecPhone'].every(k=>m.date[k]))));
+const infoDone=m=>youDone(m)&&dateDone(m);
+function blankMember(tripId,code,keep){return {tripId,code,you:{},date:{},solo:false,roomId:(keep&&keep.roomId)||'',hotelRoom:(keep&&keep.hotelRoom)||'',paidChapter:false,updatedAt:Date.now()}}
+/* Rooms: standard = 2 members + their dates, solo = 1 member + date, penthouse = 2-4 members + dates. Each member holds 2 places: himself and his date. */
+function roomsOf(t){if(t&&t.rooms&&t.rooms.length)return t.rooms;const n=(t&&t.groups)||Math.ceil(((t&&t.spots)||4)/4);return Array.from({length:n},(_,i)=>({id:'g'+(i+1),label:'Room '+(i+1),type:'standard',maxMembers:2}))}
+const roomIdOf=m=>(m&&(m.roomId||(m.group?'g'+m.group:'')))||'';
+const hasDate=m=>!!(m&&!m.solo&&m.date&&m.date.name);
+const peopleIn=list=>list.reduce((s,m)=>s+1+(hasDate(m)?1:0),0);
+function roomById(t,rid){return roomsOf(t).find(r=>r.id===rid)||null}
+function roomLabel(t,rid){const r=roomById(t,rid);return r?r.label:''}
+function roomRoster(tripId,rid){return tripMembers(tripId).filter(m=>roomIdOf(m)===rid)}
+/* One roommate's hotel number covers the whole room: the most recently saved number in the room wins; the penthouse uses the admin's number. */
+function roomNo(t,tripId,rid){if(!rid)return '';const r=roomById(t,rid);if(r&&r.type==='penthouse'&&r.number)return r.number;
+  const ro=roomRoster(tripId,rid).filter(x=>x.hotelRoom).sort((a,b)=>(b.hotelAt||0)-(a.hotelAt||0));return ro.length?ro[0].hotelRoom:''}
+function hotelOf(t,m){return m?roomNo(t,m.tripId,roomIdOf(m)):''}
+function roomTitle(t,tripId,rid){const l=roomLabel(t,rid);if(!l)return '';const n=roomNo(t,tripId,rid);return n?l+' - #'+n:l}
+function pinnedBlock(t,big){const p=t&&t.pinned;if(!p||!p.text)return '';
+  if(big)return `<div class="card" style="border:2px solid var(--gold);padding:22px;gap:14px"><div class="row" style="gap:8px;color:var(--gold-ink)"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5M9 3h6l-1 6 4 4H6l4-4z"/></svg><span class="eyebrow" style="color:var(--gold-ink);font-size:13px">Pinned</span></div><div style="white-space:pre-line;font-family:var(--display);font-size:24px;line-height:1.3;font-weight:500">${esc(p.text)}</div></div>`;
+  return `<div class="card" style="border:2px solid var(--gold)"><div class="row" style="gap:8px;color:var(--gold-ink)"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 17v5M9 3h6l-1 6 4 4H6l4-4z"/></svg><span class="eyebrow" style="color:var(--gold-ink)">Pinned</span></div><div style="white-space:pre-line;font-weight:600">${esc(p.text)}</div></div>`}
+function pinForm(t,tripId){const ph=roomsOf(t).find(r=>r.type==='penthouse'),p=t.pinned;
+  return `<form data-form="pin" class="card" novalidate><h2 style="font-size:18px">Pinned announcement</h2><p class="small muted" style="margin:0">Shows at the top of every member’s Home and Trip tabs, above the latest update.</p>
+    <input type="hidden" name="trip" value="${esc(tripId)}">
+    <div class="field"><label for="pin-${esc(tripId)}">Announcement</label><textarea id="pin-${esc(tripId)}" name="text" class="input" placeholder="e.g. Penthouse: Havasu Landing Resort, Room #1201">${esc(p&&p.text)}</textarea></div>
+    <div class="row">${ph?`<button type="button" class="btn ghost sm" data-act="phpin" data-arg="${esc(tripId)}">Use penthouse location</button>`:''}<button class="btn sm" type="submit">${p&&p.text?'Update pin':'Pin it'}</button>${p&&p.text?`<button type="button" class="btn danger sm" data-act="unpin" data-arg="${esc(tripId)}">Unpin</button>`:''}</div></form>`}
+const capacity=t=>roomsOf(t).reduce((s,r)=>s+r.maxMembers,0);
+const regCap=t=>roomsOf(t).filter(r=>r.type!=='penthouse').reduce((s,r)=>s+r.maxMembers,0);
+const phRoom=t=>roomsOf(t).find(r=>r.type==='penthouse')||null;
+const regCodes=id=>tripCodes(id).filter(c=>!c.penthouse), phCodes=id=>tripCodes(id).filter(c=>c.penthouse);
+function daysTo(start){if(!start)return null;const t=Date.parse(start+'T00:00:00');if(isNaN(t))return null;return Math.max(0,Math.ceil((t-Date.now())/86400000))}
+const validSession=()=>st.role==='member'&&st.me&&st.me.code?st.me:null;
+const myId=()=>(st.me&&st.me.memberId)||'';
+
+/* ---------- render ---------- */
+function isEditing(){const a=document.activeElement;return a&&$('view').contains(a)&&/^(INPUT|TEXTAREA|SELECT)$/.test(a.tagName)}
+function schedule(){if(isEditing()){pending=true;return}render()}
+document.addEventListener('focusout',()=>setTimeout(()=>{if(pending&&!isEditing()){pending=false;render()}},0));
+
+function render(){st.unlockAt=null;
+  const staff=st.role==='admin'||st.role==='planner'||st.role==='staff_unassigned';
+  $('topbar').hidden=!staff;document.body.classList.toggle('has-top',staff);
+  $('who').textContent=st.email?('Signed in as '+st.email):'';
+  $('roles').hidden=st.role!=='admin';
+  $('roles').innerHTML=st.role==='admin'?[['admin','Admin'],['planner','Planner view']].map(([r,l])=>`<button data-act="role" data-arg="${r}" aria-pressed="${st.view===r}">${l}</button>`).join(''):'';
+  const v=$('view');
+  v.className='col '+((st.role==='admin'||st.role==='planner')?'wide':'narrow');
+  let html;
+  if(st.fatal) html=`<div class="card"><h2 class="h1">App isn’t <em>set up</em></h2><p class="muted" style="margin:0">The Supabase settings are missing from config.js, or the Supabase library didn’t load. Run <b>npm install</b> and <b>npx cap sync</b>, then rebuild.</p></div>`;
+  else if(!st.loaded&&st.netErr) html=`<div class="card"><h2 class="h1">Can’t <em>connect</em></h2><p class="muted" style="margin:0">Check your internet connection and try again.</p><button class="btn" data-act="retry">Try again</button></div>`;
+  else if(!st.loaded) html='<div class="loading">Loading…</div>';
+  else if(st.role==='admin') html=st.view==='planner'?plannerView():adminView();
+  else if(st.role==='planner') html=plannerView();
+  else if(st.role==='staff_unassigned') html=unassignedView();
+  else if(st.role==='member') html=memberView();
+  else html=st.screen==='staff'?staffView():joinView();
+  v.innerHTML=html;
+  tickCountdowns();
+  const s=st.role==='member'&&validSession();
+  $('tabs').hidden=!s;
+  if(s){
+    const tabs=[['home','Home','<path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z"/>'],
+      ['room','Room','<path d="M3 20V8m0 6h18v6M21 14v-2a3 3 0 0 0-3-3h-7v5"/><circle cx="7" cy="11" r="2"/>'],
+      ['info','Info','<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>'],
+      ['trip','Trip','<rect x="3" y="4.5" width="18" height="16" rx="2.5"/><path d="M3 9.5h18M8 2.5v4M16 2.5v4"/>'],
+      ['people','People','<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14a6.5 6.5 0 0 1 3.5 6"/>']];
+    $('tabs-in').innerHTML=tabs.map(([k,l,p])=>`<button data-act="tab" data-arg="${k}" ${st.tab===k?'aria-current="page"':''}><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">${p}</svg>${l}</button>`).join('');
+  }
+}
+
+/* ---------- member ---------- */
+function memberView(){
+  const s=validSession();
+  if(!s) return joinView();
+  const tripId=s.tripId, trip=st.trips[tripId], m=st.members[s.memberId]||blankMember(tripId,s.code);
+  m.code=s.code;
+  if(!trip) return `<div class="card">This trip was removed by Formal Wise. <button class="btn ghost sm" data-act="signout">Sign out</button></div>`;
+  if(st.tab==='room') return roomTab(trip,tripId,m,s.memberId);
+  if(st.tab==='info') return infoTab(m);
+  if(st.tab==='trip') return tripTab(trip);
+  if(st.tab==='people') return peopleTab(trip,tripId);
+  return homeTab(trip,tripId,m);
+}
+function joinView(){
+  return `<div class="join">
+    <div class="tm">FORMAL WISE</div>
+    <h1 class="big">Join your <em>formal.</em></h1>
+    <p class="muted" style="margin:0;font-size:16px">Enter the access code your chapter planner sent you.</p>
+    ${st.signedOut?'<div class="note">You were signed out because your spot was transferred to someone else. If that’s a mistake, contact your planner.</div>':''}
+    <form data-form="join" class="card" novalidate>
+      <div class="field"><label for="jcode">Access code</label>
+      <input id="jcode" name="code" class="input codein" autocomplete="one-time-code" autocapitalize="characters" spellcheck="false" placeholder="e.g. VEGA-7K2QM" required></div>
+      <button class="btn" type="submit" ${st.busy==='join'?'disabled':''}>${st.busy==='join'?'Checking…':'Continue'}</button>
+    </form>
+    <p class="small muted" style="margin:0">Each code is one paid spot on the trip. Replacing someone who backed out? Your planner will send you their code.</p>
+    <button class="linkbtn small" data-act="staffscreen">Chapter planner or Formal Wise staff? Sign in with email</button>
+  </div>`;
+}
+function staffView(){
+  const s=st.staff;
+  if(s.step==='code')return `<div class="join">
+    <div class="tm">FORMAL WISE · STAFF</div>
+    <h1 class="big">Check your <em>email.</em></h1>
+    <p class="muted" style="margin:0;font-size:16px">We sent a sign-in code to <b>${esc(s.email)}</b>. It can take a minute to arrive, and it might land in spam.</p>
+    <form data-form="staffcode" class="card" novalidate>
+      <div class="field"><label for="otp">Sign-in code</label>
+      <input id="otp" name="token" class="input codein" inputmode="numeric" autocomplete="one-time-code" maxlength="10" placeholder="123456" required></div>
+      <button class="btn" type="submit" ${st.busy==='otp'?'disabled':''}>${st.busy==='otp'?'Checking…':'Sign in'}</button>
+    </form>
+    <div class="row"><button class="linkbtn small" data-act="staffresend">Send a new code</button><button class="linkbtn small" data-act="staffemail">Use a different email</button></div>
+  </div>`;
+  return `<div class="join">
+    <div class="tm">FORMAL WISE · STAFF</div>
+    <h1 class="big">Planner <em>sign in.</em></h1>
+    <p class="muted" style="margin:0;font-size:16px">Use the email Formal Wise has on file for your chapter. We’ll email you a code, no password needed.</p>
+    <form data-form="staffemail" class="card" novalidate>
+      <div class="field"><label for="semail">Email</label>
+      <input id="semail" name="email" type="email" class="input" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@school.edu" value="${esc(s.email)}" required></div>
+      <button class="btn" type="submit" ${st.busy==='otp'?'disabled':''}>${st.busy==='otp'?'Sending…':'Email me a code'}</button>
+    </form>
+    <button class="linkbtn small" data-act="joinscreen">Have an access code? Join as a member</button>
+  </div>`;
+}
+function unassignedView(){
+  return `<div class="join">
+    <div class="tm">FORMAL WISE</div>
+    <h1 class="big">You’re <em>signed in.</em></h1>
+    <div class="card"><p style="margin:0"><b>${esc(st.email||'')}</b> isn’t linked to a trip yet.</p>
+      <p class="small muted" style="margin:0">Ask Formal Wise to add this email as your chapter’s planner. Once they do, tap Check again.</p>
+      <div class="row"><button class="btn" data-act="retry">Check again</button></div></div>
+  </div>`;
+}
+/* Itinerary events carry a calendar date + clock time; the countdown always targets the next one that hasn't happened yet. */
+function evAt(e){if(!e||!e.date)return null;const t=Date.parse(e.date+'T'+(/^\d\d:\d\d$/.test(e.time||'')?e.time:'00:00')+':00');return isNaN(t)?null:t}
+function sortedItin(t){return ((t&&t.itinerary)||[]).slice().sort((a,b)=>(evAt(a)??Infinity)-(evAt(b)??Infinity))}
+function evDay(e){const a=evAt(e);return a?new Date(a).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'}):(e.day||'')}
+function evTime(e){const a=evAt(e);return a?new Date(a).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'}):(e.time||'')}
+function nextEvent(t){const now=Date.now();return sortedItin(t).find(e=>{const a=evAt(e);return a&&a>now})||null}
+function heroBlock(trip){
+  const ev=nextEvent(trip), startT=trip.start?Date.parse(trip.start+'T00:00:00'):NaN, now=Date.now();
+  let target=null,cap='',label='';
+  if(ev){target=evAt(ev);label='Countdown to '+ev.title;cap=`until<span class="cd-ev">${esc(ev.title)}</span><span class="cd-when">${esc(evDay(ev))} · ${esc(evTime(ev))}</span>${ev.place?'<span class="cd-when" style="font-weight:500">'+esc(ev.place)+'</span>':''}`}
+  else if(!isNaN(startT)&&startT>now){target=startT;label='Countdown to departure';cap='until departure'}
+  const started=sortedItin(trip).some(e=>evAt(e))||(!isNaN(startT)&&startT<=now);
+  const t=target==null?NaN:target;
+  const unit=(u,l)=>`<div><b data-u="${u}">--</b><span>${l}</span></div>`;
+  return `<div class="hero">
+    <div style="display:flex;flex-direction:column;gap:6px">
+      <div class="eyebrow">${esc(trip.chapter)}${trip.school?' · '+esc(trip.school):''}</div>
+      <div class="place">${esc(trip.destination)}</div>
+      ${trip.resort?`<div style="color:var(--on-hero);font-weight:600;font-size:17px">${esc(trip.resort)}</div>`:''}
+      <div style="color:var(--on-hero-muted)">${esc(trip.dates||'Dates to be announced')}</div>
+    </div>
+    <div class="countdown" ${isNaN(t)?'':`data-countdown="${t}"`} role="timer" aria-label="${esc(label||'Countdown')}">
+      ${isNaN(t)?`<div class="cd-none">${started?'Enjoy the trip!':'First event coming soon'}</div>`:`<div class="cd-grid">${unit('d','Days')}${unit('h','Hours')}${unit('m','Min')}${unit('s','Sec')}</div><div class="cd-cap">${cap}</div>`}
+    </div></div>`;
+}
+/* Room selection: unlocks automatically 2 days after the planner's info due date (date names + emergency contacts), or when the planner opens it early. */
+const DAY=864e5;
+function fmtPhone(v){const d=String(v||'').replace(/\D/g,'');const x=d.length===11&&d[0]==='1'?d.slice(1):d;return x.length===10?'('+x.slice(0,3)+') '+x.slice(3,6)+'-'+x.slice(6):String(v||'')}
+function longDay(ts){const d=new Date(ts),n=d.getDate(),sfx=(n%100>=11&&n%100<=13)?'th':({1:'st',2:'nd',3:'rd'}[n%10]||'th');return d.toLocaleDateString([], {month:'long'})+' '+n+sfx}
+const placeName=t=>(t&&(t.resort||t.destination))||'';
+/* One sign-up window covers rooms, roommates, date names and emergency contacts: it opens on openDay and closes at the end of closeDay. */
+const dayTs=d=>{const t=Date.parse(String(d||'')+'T00:00:00');return isNaN(t)?null:t};
+function winOpenAt(t){if(!t)return null;const o=dayTs(t.openDay)||dayTs(t.roomsUnlock);if(o)return o;const d=dayTs(t.infoDue);return d?d+2*DAY:null}
+function winCloseAt(t){const c=t&&dayTs(t.closeDay);return c?c+DAY:null}
+function winState(t){if(t&&t.roomsOverride==='open')return 'open';if(t&&t.roomsOverride==='closed')return 'closed';const o=winOpenAt(t),c=winCloseAt(t),n=Date.now();if(o==null)return 'unset';if(n<o)return 'before';if(c!=null&&n>=c)return 'closed';return 'open'}
+function nextTransition(t){if(t&&t.roomsOverride)return null;const n=Date.now(),o=winOpenAt(t),c=winCloseAt(t);if(o&&n<o)return o;if(c&&n<c)return c;return null}
+function roomsOpenAt(t){return winOpenAt(t)}
+const isoDay=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
+function roomsOpen(t){return winState(t)==='open'}
+const fmtDay=ts=>new Date(ts).toLocaleDateString([], {weekday:'short',month:'short',day:'numeric'});
+const dueTxt=t=>{const c=t&&(dayTs(t.closeDay));return c?fmtDay(c):''};
+function tickCountdowns(){if(st.unlockAt&&Date.now()>=st.unlockAt){st.unlockAt=null;schedule()}document.querySelectorAll('[data-countdown]').forEach(el=>{const diff=+el.dataset.countdown-Date.now();
+  if(diff<=0){el.removeAttribute('data-countdown');setTimeout(schedule,0);return}
+  const v={d:Math.floor(diff/864e5),h:Math.floor(diff/36e5)%24,m:Math.floor(diff/6e4)%60,s:Math.floor(diff/1e3)%60};
+  el.querySelectorAll('[data-u]').forEach(b=>{const u=b.dataset.u;b.textContent=u==='d'?String(v.d):String(v[u]).padStart(2,'0')})})}
+setInterval(tickCountdowns,1000);
+function updatesBlock(trip,big){const ups=(trip.updates||[]).slice(0,big?2:1);if(!ups.length)return '';
+  return `<button class="card" style="text-align:left;${big?'padding:22px;gap:14px':''}" data-act="tab" data-arg="trip"><div class="eyebrow">${big&&ups.length>1?'Latest updates':'Latest update'}</div>
+    ${ups.map((u,i)=>`<div style="${i?'border-top:1px solid var(--line);padding-top:12px':''}"><div style="${big?'font-size:19px;line-height:1.45;font-weight:600':''}">${esc(u.text)}</div><div class="small muted">${new Date(u.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div></div>`).join('')}</button>`}
+function homeTab(trip,tripId,m){
+  const rid=roomIdOf(m), hr=hotelOf(trip,m);
+  const open=roomsOpen(trip), oa=roomsOpenAt(trip), ws=winState(trip);{const nt=nextTransition(trip);if(nt)st.unlockAt=st.unlockAt?Math.min(st.unlockAt,nt):nt}
+  const todos=[['Pick your room & roommates',!!rid,'room',1],['Add your info & your date',infoDone(m),'info',1]].concat(rid?[['Add hotel room # after check-in',!!hr,'room',0]]:[]);
+  const winLeft=todos.some(t=>!t[1]&&t[3]), ce=winCloseAt(trip);
+  const todoWhen=!winLeft?'':ws==='open'?(ce?'Due by '+longDay(ce-1)+' 11:59 P.M.':''):ws==='before'?'Opens '+longDay(oa):ws==='closed'?'Closed, ask your planner':'Opens soon';
+  const left=todos.filter(t=>!t[1]), allDone=!left.length;
+  const sg=currentSigners(trip,tripId), mine=Object.entries(sg).filter(([,k])=>k.split(':')[0]===myId());
+  const signElse=mine.filter(([room])=>room!==roomIdOf(m)).map(([room,k])=>`<div class="small" data-signer><span class="muted">${k.endsWith(':y')?'You sign for':'Your date signs for'}</span> <b>${esc(roomTitle(trip,tripId,room))}</b></div>`).join('');
+  const status=`<div class="grid2">
+    <button class="card" style="text-align:left" data-act="tab" data-arg="room"><div class="eyebrow">Your room</div><div style="font-family:var(--display);font-size:22px;font-weight:600">${rid?esc(roomTitle(trip,tripId,rid)):'Not picked yet'}</div><div class="small muted">${hr?'Checked in':(rid?'Add room # at check-in':'Pick a room')}</div>${roomSignerLine(trip,tripId,rid,myId())}${signElse}</button>
+    <button class="card" style="text-align:left" data-act="tab" data-arg="info"><div class="eyebrow">Your date</div><div style="font-family:var(--display);font-size:22px;font-weight:600">${m.solo?'Going solo':(m.date&&m.date.name?esc(m.date.name):'Not added')}</div><div class="small muted">${infoDone(m)?'Information complete':'Info needed'}</div></button>
+  </div>`;
+  const head=`<div class="between"><div class="tm">FORMAL WISE</div><button class="btn ghost sm" data-act="signout">Sign out</button></div>${heroBlock(trip)}`;
+  if(allDone) return `${head}${pinnedBlock(trip,true)}${updatesBlock(trip,true)}${status}`;
+  return `${head}
+  <div class="card"><div class="between"><h2 style="margin:0;font-size:17px;font-weight:800" id="todohead">To-Do${todoWhen?` <span style="font-weight:600;color:${ws==='closed'?'var(--warn)':'var(--muted)'}">- ${esc(todoWhen)}</span>`:''}</h2><div class="small muted">${left.length} left</div></div>
+    <div class="list">${left.map(([l,,go])=>`<button class="todo" data-act="tab" data-arg="${go}"><span class="check" aria-hidden="true"></span><span class="grow" style="font-weight:600">${esc(l)}</span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true" style="color:var(--muted)"><path d="m9 6 6 6-6 6"/></svg></button>`).join('')}</div></div>
+  ${status}
+  ${pinnedBlock(trip)}
+  ${updatesBlock(trip)}`;
+}
+function roomTab(trip,tripId,m,code){
+  const myRid=roomIdOf(m), inPh=myRid==='ph', rooms=roomsOf(trip).filter(r=>r.type!=='penthouse'||r.id===myRid), mySpots=1+(hasDate(m)?1:0);
+  const nm=mm=>(mm.you&&mm.you.name)||'New member';
+  const roomCard=(r,summary)=>{
+    const roster=roomRoster(tripId,r.id), cap=r.maxMembers*2, used=peopleIn(roster), mine=myRid===r.id;
+    const fits=roster.length<r.maxMembers&&used+mySpots<=cap;
+    const slots=[];roster.forEach(x=>{const me=x.id===code;slots.push(`<li>${esc(me?'You':nm(x))}</li>`);if(hasDate(x))slots.push(`<li class="muted">${esc(x.date.name)} <span class="small">(date)</span></li>`)});
+    for(let i=used;i<cap;i++)slots.push('<li class="muted" style="list-style:circle">Open</li>');
+    const tag=r.type==='penthouse'?`<div class="small" style="color:var(--gold-ink);font-weight:700">${esc(r.resort||'')}${r.number?' · #'+esc(r.number):''} · up to ${r.maxMembers} members + dates</div>`:(r.type==='solo'?'<div class="small muted">1 member + date</div>':'<div class="small muted">2 members + dates</div>');
+    if(summary)return `<div class="card" id="myroom" style="gap:14px;${r.type==='penthouse'?'border:2px solid var(--gold)':''}">
+      <div class="row" style="gap:10px;color:var(--ok)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><b style="font-size:18px">Thank you for choosing a room</b></div>
+      <div class="between"><div style="font-family:var(--display);font-size:26px;font-weight:600">${esc(roomTitle(trip,tripId,r.id))}</div><span class="pill ${used>=cap?'':'ok'}">${used}/${cap}</span></div>${tag}
+      <ul style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:4px">${slots.join('')}</ul>
+      ${roomSignerLine(trip,tripId,r.id,code)}
+      <p class="small muted" style="margin:0">${hasDate(m)?'Your date holds the spot next to you.':'Add your date on the Info tab and they’ll take the spot next to you.'}</p>
+      ${inPh?'<p class="small muted" style="margin:0">Your penthouse spot comes with your code, so it can\u2019t be changed here.</p>':open?'<button class="btn ghost" data-act="editroomchoice">Edit room</button>':'<p class="small muted" style="margin:0">'+(ws==='closed'?'Room selection is closed. Ask your planner for changes.':'Room changes are closed right now.')+'</p>'}</div>`;
+    if(!mine&&!fits)return '';
+    return `<div class="group ${mine?'mine':''}" style="${r.type==='penthouse'?'border-color:var(--gold)':''}"><div class="between"><b>${esc(roomTitle(trip,tripId,r.id))}</b><span class="pill ${used>=cap?'':'ok'}">${mine?'Current':used+'/'+cap}</span></div>${tag}
+      <ul class="small" style="margin:0;padding-left:18px;display:flex;flex-direction:column;gap:2px">${slots.join('')}</ul>
+      ${mine?`<button class="btn ghost sm" data-act="leaveroom">Leave room</button>`:(fits?`<button class="btn sm" data-act="joinroom" data-arg="${esc(r.id)}">${myRid?'Move here':'Join'}</button>`:'<span class="small muted">Full</span>')}</div>`;
+  };
+  const myRoom=roomById(trip,myRid), hr=hotelOf(trip,m), isPh=myRoom&&myRoom.type==='penthouse'&&myRoom.number;
+  const open=roomsOpen(trip), oa=roomsOpenAt(trip), ws=winState(trip);{const nt=nextTransition(trip);if(nt)st.unlockAt=st.unlockAt?Math.min(st.unlockAt,nt):nt}
+  if(!open&&!myRoom)return `<div><div class="eyebrow">Room block · ${esc(placeName(trip))}</div><h1 class="h1">Your <em>room</em></h1></div>${windowLock(trip,'rooms')}`;
+  const cards=rooms.map(r=>roomCard(r,false)).filter(Boolean), hidden=rooms.length-cards.length, locked=myRoom&&(!st.editRoomChoice||!open);
+  const checkin=!myRoom?'<p class="muted" style="margin:0">Pick a room below first. Once one of you adds the hotel room number, it shows for everyone in your room.</p>':
+    (isPh?`<div><div style="font-family:var(--display);font-size:30px;font-weight:600">${esc(roomTitle(trip,tripId,myRid))}</div><div class="small muted">Penthouse number set by Formal Wise.</div></div>`:
+    (hr&&st.editRoom!==true?`<div class="between"><div><div style="font-family:var(--display);font-size:30px;font-weight:600">${esc(roomTitle(trip,tripId,myRid))}</div><div class="small" style="color:var(--ok);font-weight:700">Shown for everyone in ${esc(myRoom.label)} and in People</div></div><button class="btn ghost sm" data-act="editroom">Edit</button></div>`:
+    `<form data-form="room" class="field" novalidate><label for="hroom">Hotel room number for ${esc(myRoom.label)}</label><div class="row" style="flex-wrap:nowrap"><input id="hroom" name="room" class="input" inputmode="numeric" placeholder="e.g. 425" value="${esc(hr)}" style="flex:1"><button class="btn" type="submit">Save</button></div><span class="small muted">Only one of you needs to add it. It fills in for your roommate and both dates.</span></form>`));
+  return `<div><div class="eyebrow">Room block · ${esc(placeName(trip))}</div><h1 class="h1">Your <em>room</em></h1></div>
+  <div class="card strong"><div class="eyebrow">After check-in</div>${checkin}</div>
+  ${locked?roomCard(myRoom,true):`
+  ${myRoom?`<div class="info between"><span>Changing rooms. Pick a new room below, or keep <b>${esc(roomTitle(trip,tripId,myRid))}</b>.</span><button class="btn sm" data-act="donechoice">Keep current room</button></div>`:''}
+  <div class="card"><div class="between"><div class="eyebrow">${myRoom?'Rooms':'Rooms with space'}</div><div class="small muted">${hidden?hidden+' full room'+(hidden>1?'s':'')+' hidden':rooms.length+' rooms in the block'}</div></div>
+    <p class="small muted" style="margin:0">Each spot holds one person. You take one, and your date takes the spot next to you once you add them.</p>
+    ${cards.length?`<div class="groups">${cards.join('')}</div>`:'<p class="muted" style="margin:0">Every room is full. Ask your planner about open spots.</p>'}</div>`}`;
+}
+const MONTHS=['January','February','March','April','May','June','July','August','September','October','November','December'];
+function dobPicker(prefix,dob,dis){const [y,m,d]=String(dob||'').split('-');const opt=(v,l,sel)=>`<option value="${v}" ${sel?'selected':''}>${l}</option>`;
+  return `<div class="field"><span class="small" id="${prefix}dobl" style="font-weight:700;color:var(--muted)">Date of birth *</span>
+    <div style="display:grid;grid-template-columns:minmax(0,1.6fr) minmax(0,1fr) minmax(0,1.1fr);gap:8px" role="group" aria-labelledby="${prefix}dobl">
+      <select id="${prefix}dobM" name="${prefix}dobM" class="input" required ${dis} aria-label="Birth month">${opt('','Month',!m)}${MONTHS.map((n,i)=>opt(String(i+1).padStart(2,'0'),n,m===String(i+1).padStart(2,'0'))).join('')}</select>
+      <select id="${prefix}dobD" name="${prefix}dobD" class="input" required ${dis} aria-label="Birth day">${opt('','Day',!d)}${Array.from({length:31},(_,i)=>opt(String(i+1).padStart(2,'0'),i+1,d===String(i+1).padStart(2,'0'))).join('')}</select>
+      <select id="${prefix}dobY" name="${prefix}dobY" class="input" required ${dis} aria-label="Birth year">${opt('','Year',!y)}${Array.from({length:11},(_,i)=>2010-i).map(yr=>opt(yr,yr,y===String(yr))).join('')}</select>
+    </div></div>`}
+function infoFields(prefix,o,disabled){
+  o=o||{};const dis=disabled?'disabled':'';
+  return `<div class="field"><label for="${prefix}name">Full name *</label><input id="${prefix}name" name="${prefix}name" class="input" required ${dis} autocomplete="${prefix==='y_'?'name':'off'}" placeholder="Legal first and last name" value="${esc(o.name)}"></div>
+  ${dobPicker(prefix,o.dob,dis)}
+  <div class="grid2">
+  <div class="field"><label for="${prefix}phone">Phone *</label><input id="${prefix}phone" name="${prefix}phone" type="tel" class="input" required ${dis} placeholder="(555) 555-5555" value="${esc(o.phone)}"></div></div>
+  <div class="field"><label for="${prefix}ecName">Emergency contact name *</label><input id="${prefix}ecName" name="${prefix}ecName" class="input" required ${dis} placeholder="Name and relationship" value="${esc(o.ecName)}"></div>
+  <div class="field"><label for="${prefix}ecPhone">Emergency contact phone *</label><input id="${prefix}ecPhone" name="${prefix}ecPhone" type="tel" class="input" required ${dis} placeholder="(555) 555-5555" value="${esc(o.ecPhone)}"></div>`;
+}
+function windowLock(trip,what){const ws=winState(trip),oa=winOpenAt(trip);
+  const title=ws==='closed'?(what==='rooms'?'Room selection is closed':'Info is closed'):(oa&&ws==='before'?(what==='rooms'?'Room selection opens ':'Info opens ')+esc(fmtDay(oa)):(what==='rooms'?'Room selection isn\u2019t open yet':'Info isn\u2019t open yet'));
+  const body=ws==='closed'?'The sign-up window closed'+(trip.closeDay?' on '+esc(dueTxt(trip)):'')+'. Ask your planner if you need a change.':
+    (oa?'Rooms, roommates, date names and emergency contacts all open on <b>'+esc(fmtDay(oa))+'</b>'+(trip.closeDay?' and are due by <b>'+esc(dueTxt(trip))+'</b>':'')+'.':'Your planner will set the day rooms, roommates and date info open.');
+  return `<div class="card strong" id="${what==='rooms'?'roomslocked':'infolocked'}" style="gap:14px"><div class="row" style="gap:10px"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><b style="font-size:18px">${title}</b></div>
+    <p style="margin:0">${body}</p>${ws==='closed'?'':'<div class="small muted">Your Home tab will show when it\u2019s open.</div>'}</div>`}
+function infoTab(m){
+  const solo=!!m.solo, done=infoDone(m), trip=st.trips[m.tripId], ws=winState(trip);
+  if(!done&&ws!=='open')return `<div><div class="eyebrow">Guest list</div><h1 class="h1">You &amp; your <em>date</em></h1></div>${windowLock(trip,'info')}`;
+  const fmt=d=>{const t=Date.parse(d+'T00:00:00');return isNaN(t)?esc(d):new Date(t).toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'})};
+  const who=(label,o)=>`<div style="display:flex;flex-direction:column;gap:3px;min-width:0"><div class="eyebrow">${label}</div><div style="font-family:var(--display);font-size:22px;font-weight:600">${esc(o.name)}</div><div class="small muted">Born ${fmt(o.dob)} · ${esc(o.phone)}</div><div class="small muted">Emergency: ${esc(o.ecName)} · ${esc(o.ecPhone)}</div></div>`;
+  if(done&&(!st.editInfo||ws!=='open'))return `<div><div class="eyebrow">Guest list</div><h1 class="h1">You &amp; your <em>date</em></h1></div>
+  <div class="card strong" style="gap:16px"><div class="row" style="gap:10px;color:var(--ok)"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg><b style="font-size:18px">Information complete</b></div>
+    <p class="small muted" style="margin:0">${solo?'You’re on the guest list.':'You and your date are on the guest list.'} Your planner has everything they need.</p>
+    <div class="grid2">${who('You',m.you)}${solo?'<div style="display:flex;flex-direction:column;gap:3px"><div class="eyebrow">Your date</div><div style="font-family:var(--display);font-size:22px;font-weight:600">Going solo</div></div>':who('Your date',m.date)}</div>
+    ${ws==='open'?'<button class="btn ghost" data-act="editinfo">Edit information</button>':'<p class="small muted" style="margin:0">'+(ws==='closed'?'Info is closed. Ask your planner if something needs to change.':'Editing opens with rooms.')+'</p>'}</div>`;
+  return `<div><div class="eyebrow">Guest list</div><h1 class="h1">${done?'Edit your <em>info</em>':'You &amp; your <em>date</em>'}</h1></div>
+  <div class="info">${trip&&trip.closeDay?'<b>Due '+esc(dueTxt(trip))+'.</b> ':''}All fields are required. Use legal names: they go on the guest list checked at the door. Your phone numbers are shown to others on this trip in People. All trip events are mandatory.</div>
+  <form data-form="info" class="col" style="gap:16px;width:100%" novalidate>
+    <section class="card" aria-labelledby="youh"><h2 id="youh" class="eyebrow">You</h2>${infoFields('y_',m.you,false)}</section>
+    <section class="card" aria-labelledby="dateh"><div class="between"><h2 id="dateh" class="eyebrow">Your date</h2>
+      <button type="button" class="btn ${solo?'':'ghost'} sm" data-act="solo" aria-pressed="${solo}" id="solobtn">Going solo</button></div>
+      <input type="hidden" name="solo" id="soloval" value="${solo?'1':''}">
+      <div id="datefields" class="col" style="gap:12px;width:100%" ${solo?'hidden':''}>${infoFields('d_',m.date,solo)}</div>
+      <p id="solonote" class="small muted" style="margin:0" ${solo?'':'hidden'}>No date for this trip. Tap Going solo again to add one.</p>
+    </section>
+    <button class="btn" type="submit">Save my info</button>
+    ${done?'<button type="button" class="btn ghost" data-act="canceledit">Cancel</button>':''}
+  </form>`;
+}
+function tripTab(trip){
+  const it=sortedItin(trip), days=[];
+  it.forEach(e=>{const d=evDay(e);if(!days.includes(d))days.push(d)});
+  const ups=trip.updates||[];
+  return `<div><div class="eyebrow">${esc(trip.dates||'')} · ${esc(placeName(trip))}</div><h1 class="h1">The <em>plan</em></h1></div>
+  ${pinnedBlock(trip)}
+  <div class="card"><div class="eyebrow">Itinerary · all events mandatory</div>
+    ${it.length?days.map(d=>`<div class="dayh">${esc(d)}</div>${it.filter(e=>evDay(e)===d).map(e=>`<div class="ev"><div class="t">${esc(evTime(e))}</div><div class="grow"><div style="font-weight:600">${esc(e.title)}</div><div class="small muted">${esc(e.place)}</div></div></div>`).join('')}`).join(''):'<p class="muted" style="margin:0">Your planner hasn’t posted the itinerary yet.</p>'}
+  </div>
+  <div class="card"><div class="eyebrow">Updates</div>
+    ${ups.length?`<div class="list">${ups.map(u=>`<div class="li" style="align-items:flex-start"><div class="grow"><div>${esc(u.text)}</div><div class="small muted">${esc(u.by||'Planner')} · ${new Date(u.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}</div></div></div>`).join('')}</div>`:'<p class="muted" style="margin:0">No updates yet.</p>'}
+  </div>`;
+}
+function peopleEntries(tripId){
+  const out=[], t=st.trips[tripId];
+  tripMembers(tripId).forEach(m=>{
+    if(m.you&&m.you.name){
+      const room=hotelOf(t,m), group=roomTitle(t,tripId,roomIdOf(m));
+      const d=hasDate(m)?m.date.name:'';
+      out.push({key:m.id+':y',pair:m.id,lead:true,name:m.you.name,partner:d,role:d?'Member · with '+d:'Member · going solo',phone:m.you.phone||'',room,group});
+      if(d)out.push({key:m.id+':d',pair:m.id,lead:false,name:d,partner:m.you.name,role:'Date of '+m.you.name,phone:(m.date&&m.date.phone)||'',room,group});
+    }
+  });
+  return out.sort((a,b)=>a.name.localeCompare(b.name));
+}
+function peopleList(tripId){
+  const q=st.q.trim().toLowerCase();
+  const all=peopleEntries(tripId);
+  let list=all;
+  if(q){const pairs=new Set(all.filter(p=>p.name.toLowerCase().includes(q)||p.partner.toLowerCase().includes(q)).map(p=>p.pair));
+    list=all.filter(p=>pairs.has(p.pair)).sort((a,b)=>{const la=all.find(x=>x.pair===a.pair&&x.lead).name,lb=all.find(x=>x.pair===b.pair&&x.lead).name;return la.localeCompare(lb)||(a.lead?-1:1)})}
+  if(!list.length)return `<p class="muted" style="margin:0;padding:12px 0">${q?'No one matches that name.':'No one has added their name yet. Names show up here once members save their info.'}</p>`;
+  let prev='';
+  return list.map(p=>{
+    let head='';if(!q){const L=p.name[0].toUpperCase();head=L!==prev?`<div class="dayh">${esc(L)}</div>`:'';prev=L}
+    const sub=q&&!p.lead;
+    const open=st.openPerson===p.key;
+    return `${head}<div style="${sub?'margin-left:24px;border-top:1px dashed var(--line)':'border-top:1px solid var(--line)'}"><button class="todo" style="border-top:none" data-act="person" data-arg="${esc(p.key)}" aria-expanded="${open}"><span class="av" aria-hidden="true">${esc(initials(p.name))}</span><span class="grow"><span style="display:block;font-weight:600">${esc(p.name)}</span>${open?`<span class="small" data-phone style="display:block;font-weight:700;font-variant-numeric:tabular-nums">${p.phone?esc(fmtPhone(p.phone)):'<span class="muted">No phone added</span>'}</span>`:''}<span class="small muted">${esc(p.role)}</span></span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="color:var(--muted);${open?'transform:rotate(180deg)':''}"><path d="m6 9 6 6 6-6"/></svg></button>
+      ${open?`<div class="roomshow"><div><div class="small" style="color:var(--on-hero-muted);font-weight:600">Hotel room</div><b>${p.room?'#'+esc(p.room):'Not checked in'}</b></div><div class="small" style="color:var(--on-hero-muted)">${p.group?esc(p.group):'No room yet'}</div></div>`:''}</div>`;
+  }).join('');
+}
+function peopleTab(trip,tripId){
+  return `<div><div class="eyebrow">${esc(placeName(trip))} · ${peopleEntries(tripId).length} people</div><h1 class="h1">Who’s <em>where</em></h1></div>
+  <div class="field"><label for="pq" class="sr">Search by name</label><input id="pq" type="search" class="input" placeholder="Search by name" value="${esc(st.q)}" autocomplete="off"></div>
+  <p class="small muted" style="margin:0">Tap a name to see their room number. Searching a member also shows their date, and searching a date shows who they\u2019re with.</p>
+  <div class="card" style="gap:0"><div id="plist" data-trip="${esc(tripId)}">${peopleList(tripId)}</div></div>`;
+}
+
+/* ---------- planner ---------- */
+function plannerView(){
+  const trips=Object.entries(st.trips).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  if(!trips.length)return `<div><div class="eyebrow">Planner</div><h1 class="h1">No trips <em>yet</em></h1></div><div class="card"><p class="muted" style="margin:0">${st.role==='admin'?'Switch to <b>Admin</b> and create a trip first.':'Formal Wise hasn’t set up your trip yet.'}</p></div>`;
+  if(!st.trips[st.plannerTrip])st.plannerTrip=trips[0][0];
+  const id=st.plannerTrip, t=st.trips[id], codes=tripCodes(id), mem=tripMembers(id);
+  const byCode={};mem.forEach(m=>byCode[m.code]=m);
+  const active=codes.filter(c=>c.status==='active'), unused=codes.filter(c=>c.status!=='active');
+  const named=mem.filter(m=>m.you&&m.you.name);
+  const sel=trips.length>1?`<div class="field" style="max-width:420px"><label for="ptrip">Trip</label><select id="ptrip" class="input">${trips.map(([k,x])=>`<option value="${esc(k)}" ${k===id?'selected':''}>${esc(x.chapter)} · ${esc(x.destination)}</option>`).join('')}</select></div>`:'';
+  const sa=signAge(t), nEl=sa?signerPool(t,id).filter(p=>p.age>=sa).length:0;
+  const ptabs=`<div class="seg" role="tablist" aria-label="Planner sections" style="align-self:flex-start">${[['overview','Overview'],['announce','Announcements'],['signers',sa?'Room signers ('+nEl+')':'Room signers (off)']].map(([k,l])=>`<button role="tab" data-act="ptab" data-arg="${k}" aria-pressed="${(st.ptab||'overview')===k}" aria-selected="${(st.ptab||'overview')===k}">${l}</button>`).join('')}</div>`;
+  if(t.wire==='received'&&st.ptab==='signers')return `${sel}${ptabs}${signersView(t,id)}`;
+  if(t.wire==='received'&&st.ptab==='announce')return `${sel}${ptabs}${announcementsView(t,id)}`;
+  if(t.wire!=='received')return `${sel}<div><div class="eyebrow">Planner · ${esc(t.chapter)}</div><h1 class="h1">${esc(placeName(t))}</h1></div><div class="note">Codes open once Formal Wise receives your chapter’s wire.${st.role==='admin'?' Switch to Admin to mark it received.':' You’ll be able to add codes here as soon as it clears.'}</div>`;
+  const rows=codes.map(c=>{
+    const m=byCode[c.id]||{}, nm=m.you&&m.you.name, dt=m.solo?'Solo':(m.date&&m.date.name)||'', conf=st.confirm==='tr:'+c.id, open=st.detail===c.id;
+    return `<tr><td><b>${nm?esc(nm):(c.status==='active'?'<span class="muted">Joined, no name yet</span>':'<span class="muted">Unclaimed'+(c.payer?' · for '+esc(c.payer):'')+'</span>')}</b><div class="small muted" style="font-family:ui-monospace,Menlo,monospace">${esc(c.id)}${c.transfers?' · transferred '+c.transfers+'×':''}</div></td>
+      <td>${roomIdOf(m)?esc(roomLabel(t,roomIdOf(m))):'<span class="muted">—</span>'}</td>
+
+      <td>${hotelOf(t,m)?'<b>#'+esc(hotelOf(t,m))+'</b>':'<span class="muted">Not checked in</span>'}</td>
+      <td>${dt?esc(dt):'<span class="muted">Not added</span>'}</td>
+      <td>${c.status==='active'?(infoDone(m)?'<span class="pill ok">Complete</span>':'<span class="pill warn">Missing</span>'):'—'}</td>
+      <td>${c.status==='active'?`<button class="btn ${m.paidChapter?'':'ghost'} sm" data-act="paid" data-arg="${esc(m.id||'')}" aria-pressed="${!!m.paidChapter}">${m.paidChapter?'Paid':'Mark paid'}</button>`:'—'}</td>
+      <td><div class="row" style="flex-wrap:nowrap">${c.status==='active'?`<button class="btn ghost sm" data-act="detail" data-arg="${esc(c.id)}" aria-expanded="${open}">${open?'Hide':'Details'}</button>`+(conf?`<button class="btn danger sm" data-act="dotransfer" data-arg="${esc(c.id)}">Confirm transfer</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn ghost sm" data-act="transfer" data-arg="${esc(c.id)}">Transfer spot</button>`):''}</div></td></tr>
+      ${open?`<tr><td colspan="7" style="background:var(--soft)"><div class="grid2">${personCard('Member',m.you)}${m.solo?'<div class="small"><b>Date</b><br>Going solo</div>':personCard('Date',m.date)}</div></td></tr>`:''}
+      ${conf?`<tr><td colspan="7" style="background:var(--warn-bg);color:var(--warn);font-size:13px;font-weight:600">Transferring signs ${esc(nm||'this member')} out and frees code ${esc(c.id)} for the new member. The room and hotel room stay; personal info, date and paid status reset. Send the same code to the new member.</td></tr>`:''}`;
+  }).join('');
+  const it=sortedItin(t), nx=nextEvent(t);
+  return `${sel}${ptabs}
+  <div><div class="eyebrow">Planner · ${esc(t.chapter)}</div><h1 class="h1">${esc(t.destination)}, <em>at a glance</em></h1><div class="muted">${t.resort?esc(t.resort)+' · ':''}${esc(t.dates||'')}</div></div>
+  <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    <div class="stat"><span>Codes added</span><b>${codes.length}/${capacity(t)}</b></div>
+    <div class="stat"><span>Joined the app</span><b>${active.length}</b></div>
+    <div class="stat"><span>Info complete</span><b>${mem.filter(infoDone).length}</b></div>
+    <div class="stat"><span>Room spots filled</span><b>${peopleIn(mem.filter(m=>roomIdOf(m)))}/${capacity(t)*2}</b></div>
+    <div class="stat"><span>Checked in</span><b>${mem.filter(m=>hotelOf(t,m)).length}</b></div>
+    <div class="stat"><span>Paid chapter · planners only</span><b>${mem.filter(m=>m.paidChapter).length}/${active.length}</b></div>
+  </div>
+  ${deadlineCard(t,id,mem)}
+  ${finalRoomsCard(t,id,codes,mem)}
+  ${penthouseCard(t,id)}
+  ${addCodeCard(t,id,codes)}
+  <details class="card fold" data-col="codes" ${st.col&&st.col.codes?'open':''}><summary><h2 style="font-size:18px">Unused codes <span class="muted" style="font-weight:600">(${unused.length})</span></h2><span class="chev" aria-hidden="true"></span></summary>
+    ${unused.length?`<div class="list">${unused.map(c=>`<div class="li" style="flex-wrap:wrap"><div class="grow" style="min-width:140px"><div style="font-weight:600">${esc(c.payer||'No name')}${c.penthouse?' <span class="pill" style="color:var(--gold-ink)">Penthouse</span>':''}</div><div class="small muted">Paid · not joined yet</div></div>
+      <button class="code" style="width:auto;flex:none" data-act="copy" data-arg="${esc(c.id)}" aria-label="Copy code ${esc(c.id)}">${esc(c.id)}<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg></button>
+      ${st.confirm==='void:'+c.id?`<button class="btn danger sm" data-act="dovoid" data-arg="${esc(c.id)}">Confirm void</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn ghost sm" data-act="voidcode" data-arg="${esc(c.id)}">Void</button>`}</div>`).join('')}</div>
+      <p class="small muted" style="margin:0">Send each code only to the person it\u2019s for. Void a code if it went to the wrong person or they didn\u2019t pay.</p>`:'<p class="muted" style="margin:0">No unused codes. Add one above when the next member pays.</p>'}
+  </details>
+  <details class="card fold" data-col="rooms" id="prooms" ${st.col&&st.col.rooms?'open':''}><summary><h2 style="font-size:18px">Rooms <span class="muted" style="font-weight:600">(${roomsOf(t).length} · ${peopleIn(mem.filter(m=>roomIdOf(m)))}/${capacity(t)*2} spots filled)</span></h2><span class="chev" aria-hidden="true"></span></summary><div class="groups">${roomsOf(t).map(r=>{const ro=roomRoster(id,r.id),cap=r.maxMembers*2,used=peopleIn(ro);
+    return `<div class="group" style="${r.type==='penthouse'?'border-color:var(--gold)':''}"><div class="between"><b>${esc(roomTitle(t,id,r.id))}</b><span class="pill ${used>=cap?'':'ok'}">${used}/${cap}</span></div>${r.type==='penthouse'?`<div class="small" style="color:var(--gold-ink);font-weight:700">${esc(r.resort||'')}${r.number?' · #'+esc(r.number):''}</div>`:''}<div class="small muted">${ro.length?ro.map(x=>esc((x.you&&x.you.name)||'New member')+(hasDate(x)?' + '+esc(x.date.name):'')).join('<br>'):'Empty'}</div></div>`}).join('')}</div></details>
+  <div class="card"><h2 style="font-size:18px">Members</h2><div class="tablewrap"><table><thead><tr><th>NAME · CODE</th><th>GROUP</th><th>HOTEL ROOM</th><th>DATE</th><th>INFO</th><th>PAID CHAPTER</th><th><span class="sr">Actions</span></th></tr></thead><tbody>${rows}</tbody></table></div></div>
+`;
+}
+function announcementsView(t,id){
+  const it=sortedItin(t), nx=nextEvent(t);
+  return `<div><div class="eyebrow">Planner · ${esc(t.chapter)}</div><h1 class="h1">Announce<em>ments</em></h1><div class="muted">Everything here shows up for members on their Home and Trip tabs.</div></div>
+  ${pinForm(t,id)}
+  <div class="grid2">
+    <form data-form="update" class="card" novalidate><h2 style="font-size:18px">Post an update</h2><div class="field"><label for="utext">Message to everyone on the trip</label><textarea id="utext" name="text" class="input" required placeholder="e.g. Bus leaves at 1:00 PM Friday from the chapter house."></textarea></div><button class="btn" type="submit">Post update</button></form>
+    <form data-form="itin" class="card" novalidate><h2 style="font-size:18px">Add to itinerary</h2>
+      <div class="grid2"><div class="field"><label for="idate">Date</label><input id="idate" name="date" type="date" class="input" required value="${esc(t.start||'')}"></div><div class="field"><label for="itime">Time</label><input id="itime" name="time" type="time" class="input" required step="300"></div></div>
+      <p class="small muted" style="margin:0">The member countdown always counts down to the next event on this list.</p>
+      <div class="field"><label for="ititle">Event</label><input id="ititle" name="title" class="input" required placeholder="Welcome dinner"></div>
+      <div class="field"><label for="iplace">Where</label><input id="iplace" name="place" class="input" placeholder="Lakeside patio"></div>
+      <button class="btn" type="submit">Add event</button></form>
+  </div>
+  ${it.length?`<div class="card"><h2 style="font-size:18px">Itinerary</h2><div class="list">${it.map(e=>`<div class="li"><div class="grow"><b>${esc(evDay(e))} · ${esc(evTime(e))}</b> ${esc(e.title)}${nx&&nx.id===e.id?' <span class="pill ok">Countdown</span>':(evAt(e)&&evAt(e)<Date.now()?' <span class="pill">Past</span>':'')}<div class="small muted">${esc(e.place)}</div></div><button class="btn ghost sm" data-act="delitin" data-arg="${esc(e.id)}">Remove</button></div>`).join('')}</div></div>`:''}
+  ${(t.updates||[]).length?`<div class="card"><h2 style="font-size:18px">Posted updates</h2><div class="list">${(t.updates||[]).map((u,i)=>`<div class="li" style="align-items:flex-start"><div class="grow"><div>${esc(u.text)}</div><div class="small muted">${new Date(u.at).toLocaleString([], {month:'short',day:'numeric',hour:'numeric',minute:'2-digit'})}${i<2?' · on members\u2019 Home':''}</div></div><button class="btn ghost sm" data-act="delupdate" data-arg="${u.at}">Remove</button></div>`).join('')}</div></div>`:''}`;
+}
+/* ---------- room signers (optional, planner picks the minimum age) ---------- */
+const signAge=t=>{const a=t&&parseInt(t.signerAge,10);return a>=16&&a<=30?a:null};
+function checkinDate(t){if(t.start)return t.start;const f=sortedItin(t).find(e=>evAt(e));return f?f.date:new Date().toISOString().slice(0,10)}
+function ageOn(dob,on){const a=String(dob||'').split('-').map(Number),b=String(on||'').split('-').map(Number);if(a.length<3||!a[0]||!b[0])return null;let y=b[0]-a[0];if(b[1]<a[1]||(b[1]===a[1]&&b[2]<a[2]))y--;return y}
+function signerPool(t,tripId){const on=checkinDate(t),out=[];
+  tripMembers(tripId).forEach(m=>{const rid=roomIdOf(m);
+    if(m.you&&m.you.name)out.push({key:m.id+':y',code:m.id,name:m.you.name,kind:'Member',member:true,age:m.you.dob?ageOn(m.you.dob,on):null,rid});
+    if(hasDate(m))out.push({key:m.id+':d',code:m.id,name:m.date.name,kind:'Date of '+m.you.name,member:false,age:m.date.dob?ageOn(m.date.dob,on):null,rid});});
+  return out}
+/* Members can't see anyone's birthday, so on their phones the planner's saved assignments are trusted as-is (the planner's screen does the age check). */
+function currentSigners(t,tripId){const sa=signAge(t);if(!sa)return {};const el=new Set(signerPool(t,tripId).filter(p=>st.role==='member'||p.age>=sa).map(p=>p.key)),rooms=new Set(roomsOf(t).map(r=>r.id)),seen=new Set(),out={};
+  (t.signers||[]).forEach(x=>{if(rooms.has(x.room)&&el.has(x.key)&&!seen.has(x.key)&&!out[x.room]){out[x.room]=x.key;seen.add(x.key)}});return out}
+function autoSigners(t,tripId,keep){const sa=signAge(t)||99;const el=signerPool(t,tripId).filter(p=>p.age>=sa).sort((a,b)=>(b.member-a.member)||a.name.localeCompare(b.name));
+  const cur=keep?currentSigners(t,tripId):{},used=new Set(Object.values(cur)),rooms=roomsOf(t);
+  rooms.forEach(r=>{if(cur[r.id])return;const c=el.find(p=>p.rid===r.id&&!used.has(p.key));if(c){cur[r.id]=c.key;used.add(c.key)}});
+  rooms.forEach(r=>{if(cur[r.id])return;const c=el.find(p=>!used.has(p.key));if(c){cur[r.id]=c.key;used.add(c.key)}});
+  return Object.entries(cur).map(([room,key])=>({room,key}))}
+function roomSignerLine(t,tripId,rid,myCode){if(!rid)return '';const k=currentSigners(t,tripId)[rid];if(!k)return '';
+  const p=signerPool(t,tripId).find(x=>x.key===k);if(!p)return '';
+  const who=k.split(':')[0]===myCode?(k.endsWith(':y')?'You':'Your date, '+p.name):p.name;
+  const away=p.rid&&p.rid!==rid?' (staying in '+roomTitle(t,tripId,p.rid)+')':'';
+  return `<div class="small" data-signer><span class="muted">Room signer:</span> <b>${esc(who)}</b>${esc(away)}</div>`}
+function signersView(t,id){
+  const sa=signAge(t);
+  if(!sa)return `<div><div class="eyebrow">Planner · ${esc(t.chapter)}</div><h1 class="h1">Room <em>signers</em></h1><div class="muted">Optional. Turn this on if the hotel needs one person of a certain age to sign for each room.</div></div>
+  <form data-form="signage" class="card strong" novalidate><input type="hidden" name="trip" value="${esc(id)}">
+    <h2 style="font-size:18px">Does this trip need room signers?</h2>
+    <p class="small muted" style="margin:0">Pick the age a signer has to be at check-in, for example 21+ for Las Vegas, or 18+ for a college or senior trip. Ages are checked against the birthdays members enter.</p>
+    <div class="row" style="align-items:flex-end;flex-wrap:nowrap"><div class="field grow"><label for="signage">Minimum signer age</label><select id="signage" name="age" class="input">${[18,19,20,21,22,23,24,25].map(a=>`<option value="${a}" ${a===21?'selected':''}>${a}+</option>`).join('')}</select></div>
+    <button class="btn" type="submit">Turn on room signers</button></div>
+    <p class="small muted" style="margin:0">Not needed? Leave this off. Members won\u2019t see anything about signers.</p></form>`;
+  const pool=signerPool(t,id), el=pool.filter(p=>p.age>=sa), under=pool.filter(p=>p.age!=null&&p.age<sa), noDob=pool.filter(p=>p.age==null);
+  const rooms=roomsOf(t), cur=currentSigners(t,id), byKey={};pool.forEach(p=>byKey[p.key]=p);
+  const covered=rooms.filter(r=>cur[r.id]).length, short=Math.max(0,rooms.length-el.length), assigned=new Set(Object.values(cur));
+  const spare=el.filter(p=>!assigned.has(p.key));
+  const on=checkinDate(t), onTxt=new Date(Date.parse(on+'T00:00:00')).toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'});
+  const occ=r=>roomRoster(id,r.id).map(x=>esc((x.you&&x.you.name)||'New member')+(hasDate(x)?' + '+esc(x.date.name):'')).join('<br>')||'<span class="muted">Empty</span>';
+  const rows=rooms.map(r=>{const k=cur[r.id],p=k&&byKey[k];
+    const note=!p?'<span class="pill warn">Needs a signer</span>':(p.rid===r.id?'<span class="pill ok">Staying in this room</span>':`<span class="pill">Stays in ${esc(roomTitle(t,id,p.rid)||'no room yet')}</span>`);
+    return `<div class="li" style="flex-wrap:wrap;align-items:flex-start;gap:10px;padding:12px 0"><div style="flex:1 1 180px;min-width:0;display:flex;flex-direction:column;gap:4px"><b>${esc(roomTitle(t,id,r.id))}</b><div class="small muted">${occ(r)}</div><div>${note}</div></div>
+      <div style="flex:1 1 220px;min-width:0"><label class="small muted" style="font-weight:700;display:block;margin-bottom:4px" for="sg-${esc(r.id)}">Signer</label><select id="sg-${esc(r.id)}" class="input" data-room="${esc(r.id)}">
+        <option value="">— No signer —</option>${el.filter(x=>x.key===k||!assigned.has(x.key)).map(x=>`<option value="${esc(x.key)}" ${x.key===k?'selected':''}>${esc(x.name)} (${x.age}${x.member?'':' · date'})</option>`).join('')}</select></div></div>`}).join('');
+  return `<div><div class="eyebrow">Planner · ${esc(t.chapter)}</div><h1 class="h1">Room <em>signers</em></h1><div class="muted">Each room needs one signer who is ${sa}+. Ages are checked against birthdays as of check-in, ${esc(onTxt)}.</div></div>
+  <form data-form="signage" class="card" novalidate><input type="hidden" name="trip" value="${esc(id)}"><div class="row" style="align-items:flex-end">
+    <div class="field" style="min-width:150px"><label for="signage">Minimum signer age</label><select id="signage" name="age" class="input">${[18,19,20,21,22,23,24,25].map(a=>`<option value="${a}" ${a===sa?'selected':''}>${a}+</option>`).join('')}</select></div>
+    <button class="btn sm" type="submit">Update age</button>${st.confirm==='signoff:'+id?`<button type="button" class="btn danger sm" data-act="signoff" data-arg="${esc(id)}">Turn off and clear assignments</button><button type="button" class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button type="button" class="btn ghost sm" data-act="asksignoff" data-arg="${esc(id)}">Turn off room signers</button>`}</div></form>
+  <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr))">
+    <div class="stat"><span>${sa}+ at check-in</span><b>${el.length}</b></div>
+    <div class="stat"><span>Rooms to sign</span><b>${rooms.length}</b></div>
+    <div class="stat"><span>Rooms covered</span><b>${covered}/${rooms.length}</b></div>
+    <div class="stat"><span>Missing birthdays</span><b>${noDob.length}</b></div>
+  </div>
+  ${short?`<div class="note">You’re short ${short} signer${short>1?'s':''}: ${el.length} people are ${sa}+ for ${rooms.length} rooms.${noDob.length?' '+noDob.length+' people haven’t entered a birthday yet.':''}</div>`:''}
+  <div class="card"><div class="between"><h2 style="font-size:18px">Assignments</h2><div class="row">
+    <button class="btn sm" data-act="autosign" data-arg="${esc(id)}">Auto-assign open rooms</button>
+    <button class="btn ghost sm" data-act="redosign" data-arg="${esc(id)}">Redo all</button></div></div>
+    <p class="small muted" style="margin:0">Auto-assign gives each room someone ${sa}+ who’s staying in it, then fills the rest with other ${sa}+ people, so roommates who are all ${sa}+ get spread across rooms. Change any room with its dropdown.</p>
+    <div class="list">${rows}</div></div>
+  <div class="grid2">
+    <div class="card"><h2 style="font-size:16px">${sa}+ not signing (${spare.length})</h2><div class="small">${spare.length?spare.map(p=>esc(p.name)+' <span class="muted">('+p.age+(p.member?'':' · date')+')</span>').join('<br>'):'<span class="muted">Everyone '+sa+'+ is signing a room.</span>'}</div></div>
+    <div class="card"><h2 style="font-size:16px">Under ${sa} (${under.length}) · No birthday (${noDob.length})</h2><div class="small">${under.map(p=>esc(p.name)+' <span class="muted">('+p.age+')</span>').join('<br>')}${under.length&&noDob.length?'<br>':''}${noDob.map(p=>esc(p.name)+' <span style="color:var(--warn)">no birthday</span>').join('<br>')}${!under.length&&!noDob.length?'<span class="muted">None</span>':''}</div></div>
+  </div>`;
+}
+function addCodeCard(t,id,codes){
+  const max=regCap(t), n=codes.filter(c=>!c.penthouse).length, full=n>=max, last=st.lastCode&&st.codes[st.lastCode]&&st.codes[st.lastCode].tripId===id?st.codes[st.lastCode]:null;
+  return `<form data-form="addcode" class="card strong" novalidate><div class="between"><h2 style="font-size:18px">Add a code</h2><span class="pill ${full?'warn':'ok'}">${n} of ${max} added</span></div>
+    <p class="small muted" style="margin:0">Add one code each time a member pays the chapter. Each code is one paid spot and can only be made one at a time. The max is what the regular rooms hold. Penthouse codes are added separately in Penthouse.</p>
+    <input type="hidden" name="trip" value="${esc(id)}">
+    ${full?'<div class="note">Every spot in the room block has a code. Void an unused code or transfer a spot if someone drops out.</div>':`<div class="row" style="flex-wrap:nowrap;align-items:flex-end"><div class="field grow"><label for="payer">Who paid?</label><input id="payer" name="payer" class="input" required placeholder="Member\u2019s full name" autocomplete="off"></div><button class="btn" type="submit" ${st.busy==='code'?'disabled':''}>Add 1 code</button></div>`}
+    ${last?`<div class="info between"><span>New code for <b>${esc(last.payer||'')}</b></span><button type="button" class="code" style="width:auto" data-act="copy" data-arg="${esc(st.lastCode)}">${esc(st.lastCode)} <span class="small">Copy</span></button></div>`:''}</form>`}
+function penthouseCard(t,id){const ph=phRoom(t),inPh=ph?roomRoster(id,'ph').length:0,pc=phCodes(id),last=st.lastPhCode&&st.codes[st.lastPhCode]&&st.codes[st.lastPhCode].tripId===id?st.codes[st.lastPhCode]:null;
+  return `<details class="card fold" data-col="ph" ${st.col&&st.col.ph?'open':''}><summary><h2 style="font-size:18px">Penthouse <span class="muted" style="font-weight:600">(${ph?esc(ph.resort||'')+(ph.number?' #'+esc(ph.number):'')+' · up to '+ph.maxMembers+' members':'not added'})</span></h2><span class="chev" aria-hidden="true"></span></summary>
+    <p class="small muted" style="margin:0">Add it once the penthouse is booked. It fits 2–4 members plus their dates and adds those spots to the code limit.</p>
+    <form data-form="ph" class="col" style="gap:12px;width:100%" novalidate><input type="hidden" name="trip" value="${esc(id)}">
+      <div class="grid2"><div class="field"><label for="phresort">Resort</label><input id="phresort" name="resort" class="input" value="${esc(ph?ph.resort:'')}" placeholder="${esc(t.resort||'Same as the trip\u2019s resort')}"></div>
+      <div class="field"><label for="phnum">Room number *</label><input id="phnum" name="number" class="input" required value="${esc(ph?ph.number:'')}" placeholder="1201"></div>
+      <div class="field"><label for="phmax">Bedrooms (1 member + date each)</label><select id="phmax" name="max" class="input">${[2,3,4].map(n=>`<option value="${n}" ${(ph?ph.maxMembers:4)===n?'selected':''}>${n} bedrooms · ${n} members + dates</option>`).join('')}</select></div></div>
+      <div class="row"><button class="btn sm" type="submit">${ph?'Save penthouse':'Add penthouse'}</button>${ph?(inPh||pc.length?'<span class="small muted">'+pc.length+' penthouse code'+(pc.length===1?'':'s')+' out</span>':`<button type="button" class="btn danger sm" data-act="delph" data-arg="${esc(id)}">Remove penthouse</button>`):''}</div></form>
+    ${ph?`<form data-form="phcode" class="col" id="phcodes" style="gap:10px;width:100%;border-top:1px solid var(--line);padding-top:14px" novalidate><input type="hidden" name="trip" value="${esc(id)}">
+      <div class="between"><h3 style="margin:0;font-size:16px">Penthouse codes</h3><span class="pill ${pc.length>=ph.maxMembers?'warn':'ok'}">${pc.length} of ${ph.maxMembers} sent</span></div>
+      <p class="small muted" style="margin:0">The penthouse is invite-only. It never shows up in room selection. Each penthouse code puts that member straight into the penthouse, one per bedroom.</p>
+      ${pc.length>=ph.maxMembers?'<div class="note">Every bedroom has a code.</div>':`<div class="row" style="flex-wrap:nowrap;align-items:flex-end"><div class="field grow"><label for="phpayer">Who\u2019s in the penthouse?</label><input id="phpayer" name="payer" class="input" required placeholder="Member\u2019s full name" autocomplete="off"></div><button class="btn gold" type="submit" ${st.busy==='code'?'disabled':''}>Send 1 penthouse code</button></div>`}
+      ${last?`<div class="info between"><span>Penthouse code for <b>${esc(last.payer||'')}</b></span><button type="button" class="code" style="width:auto" data-act="copy" data-arg="${esc(st.lastPhCode)}">${esc(st.lastPhCode)} <span class="small">Copy</span></button></div>`:''}
+      ${pc.length?`<div class="small">${pc.map(c=>esc(c.payer||'')+' <span class="muted">· '+esc(c.id)+' · '+(c.status==='active'?'joined':'not joined yet')+'</span>').join('<br>')}</div>`:''}</form>`:''}</details>`}
+function finalRoomsCard(t,id,codes,mem){
+  const std=roomsOf(t).filter(r=>r.type!=='penthouse'), cnt=r=>roomRoster(id,r.id).length;
+  const two=std.filter(r=>cnt(r)>=2).length, one=std.filter(r=>cnt(r)===1).length, empty=std.filter(r=>cnt(r)===0).length;
+  const unclaimed=codes.filter(c=>c.status!=='active').length, noRoom=mem.filter(m=>!roomIdOf(m)).length, final=codes.length>0&&!unclaimed&&!noRoom;
+  return `<div class="card"><div class="between"><h2 style="font-size:18px">Final room count</h2>${final?'<span class="pill ok">Final</span>':'<span class="pill warn">Still changing</span>'}</div>
+    <p class="small muted" style="margin:0">Solo rooms are worked out here once every code is handed out and everyone has picked a room. Send these numbers to the hotel.</p>
+    <div class="tiles" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+      <div class="stat"><span>Rooms with 2 members</span><b>${two}</b></div>
+      <div class="stat"><span>Solo rooms (1 member)</span><b>${one}</b></div>
+      <div class="stat"><span>Empty rooms</span><b>${empty}</b></div>
+    </div>
+    ${final?'<div class="small" style="color:var(--ok);font-weight:700">All codes are claimed and everyone has a room. These numbers are final.</div>':`<div class="small">Waiting on: ${[unclaimed?unclaimed+' code'+(unclaimed>1?'s':'')+' not claimed yet':'',noRoom?noRoom+' member'+(noRoom>1?'s':'')+' without a room':'',!codes.length?'no codes added yet':''].filter(Boolean).join(' · ')}</div>`}</div>`}
+function deadlineCard(t,id,mem){
+  const ws=winState(t), oa=winOpenAt(t), joined=mem.length, ov=t.roomsOverride||'';
+  const withDate=mem.filter(m=>hasDate(m)&&infoDone(m)).length, solo=mem.filter(m=>m.solo&&youDone(m)).length, missing=joined-withDate-solo;
+  const pill={open:'<span class="pill ok">Open</span>',before:'<span class="pill warn">Not open yet</span>',closed:'<span class="pill">Closed</span>',unset:'<span class="pill warn">Not scheduled</span>'}[ws];
+  return `<form data-form="due" class="card" novalidate><div class="between"><h2 style="font-size:18px">Rooms, roommates &amp; date info</h2>${pill}</div>
+    <p class="small muted" style="margin:0">One window for everything: members pick rooms and roommates and add their info, date names and emergency contacts between these days.</p>
+    <input type="hidden" name="trip" value="${esc(id)}">
+    <div class="grid2"><div class="field"><label for="openday">Opens</label><input id="openday" name="open" type="date" class="input" required value="${esc(oa?isoDay(oa):'')}"></div>
+      <div class="field"><label for="closeday">Closes (end of day)</label><input id="closeday" name="close" type="date" class="input" required value="${esc(t.closeDay||'')}"></div></div>
+    ${ov?`<div class="small muted">${ov==='open'?'Opened early by you.':'Closed early by you.'} The dates above are ignored until you go back to the schedule.</div>`:''}
+    <div class="row"><button class="btn sm" type="submit">Save dates</button>${ov?`<button type="button" class="btn ghost sm" data-act="roomssched" data-arg="${esc(id)}">Go back to the schedule</button>`:(ws==='open'?`<button type="button" class="btn ghost sm" data-act="roomsclose" data-arg="${esc(id)}">Close now</button>`:`<button type="button" class="btn ghost sm" data-act="roomsnow" data-arg="${esc(id)}">Open now</button>`)}</div>
+    <div class="small" style="border-top:1px solid var(--line);padding-top:10px">So far: <b>${mem.filter(m=>roomIdOf(m)).length}</b> picked a room · <b>${withDate}</b> bringing a date · <b>${solo}</b> going solo · <b>${missing}</b> info not finished${joined<tripCodes(id).length?' · '+(tripCodes(id).length-joined)+' haven\u2019t joined':''}</div></form>`}
+function personCard(label,o){o=o||{};const r=(k,v)=>`<div><span class="muted">${k}:</span> ${v?esc(v):'<span style="color:var(--warn)">missing</span>'}</div>`;
+  return `<div class="small" style="display:flex;flex-direction:column;gap:2px"><b>${label}</b>${r('Name',o.name)}${r('Date of birth',o.dob)}${r('Phone',o.phone)}${r('Emergency contact',o.ecName)}${r('Emergency phone',o.ecPhone)}</div>`}
+
+/* ---------- admin ---------- */
+function adminView(){
+  const trips=Object.entries(st.trips).sort((a,b)=>(b[1].createdAt||0)-(a[1].createdAt||0));
+  const cards=trips.map(([id,t])=>{
+    const codes=tripCodes(id), act=codes.filter(c=>c.status==='active').length, tr=codes.reduce((s,c)=>s+(c.transfers||0),0), open=st.adminOpen[id], del=st.confirm==='del:'+id;
+    const rs=roomsOf(t), ph=rs.find(r=>r.type==='penthouse'), solo=rs.filter(r=>r.type==='solo').length, std=rs.filter(r=>r.type==='standard').length;
+    return `<div class="card"><div class="between"><div><div style="font-family:var(--display);font-size:22px;font-weight:600">${esc(t.chapter)} · ${esc(t.destination)}</div><div class="small muted">${t.resort?esc(t.resort)+' · ':''}${esc(t.school||'')} ${t.dates?'· '+esc(t.dates):''} · up to ${capacity(t)} members · ${std} rooms${solo?' + '+solo+' solo':''}${ph?' + penthouse ('+esc(ph.resort||'')+(ph.number?' #'+esc(ph.number):'')+', up to '+ph.maxMembers+')':''}</div></div>
+      ${t.wire==='received'?'<span class="pill ok">Wire received</span>':'<span class="pill warn">Awaiting wire</span>'}</div>
+      ${t.wire==='received'?`<div class="small">${codes.length} of ${capacity(t)} codes added by the planner · ${act} redeemed · ${tr} transferred</div>`:'<div class="small muted">The planner can\u2019t add codes until the wire clears.</div>'}
+      <form data-form="planners" class="row" style="align-items:flex-end" novalidate><input type="hidden" name="trip" value="${esc(id)}">
+        <div class="field grow" style="min-width:220px"><label for="pl-${esc(id)}">Planner emails (comma-separated)</label><input id="pl-${esc(id)}" name="emails" class="input" autocapitalize="none" spellcheck="false" value="${esc((t.planners||[]).join(', '))}" placeholder="planner@school.edu"></div>
+        <button class="btn ghost sm" type="submit">Save planners</button></form>
+      ${(t.planners||[]).length?`<div class="list" data-planners>${t.planners.map(e=>{const inv=(t.invited||[]).includes(e);return `<div class="li" style="min-height:48px;flex-wrap:wrap"><div class="grow small" style="min-width:180px;overflow-wrap:anywhere"><b>${esc(e)}</b> <span class="pill ${inv?'ok':'warn'}">${inv?'Invite sent':'Not invited yet'}</span></div><button class="btn ghost sm" data-act="invite" data-arg="${esc(id)}|${esc(e)}">${inv?'Resend invite':'Send invite'}</button></div>`}).join('')}</div>`:'<div class="small" style="color:var(--warn);font-weight:600">No planner yet. Add their email and they’ll get an invite.</div>'}
+      <div class="row">
+        ${t.wire!=='received'?`<button class="btn gold sm" data-act="activate" data-arg="${esc(id)}">Mark wire received</button>`:`<button class="btn ghost sm" data-act="togglecodes" data-arg="${esc(id)}" aria-expanded="${!!open}">${open?'Hide codes':'View codes'}</button>`}
+        <button class="btn ghost sm" data-act="asplanner" data-arg="${esc(id)}">Open planner view</button>
+        ${del?`<button class="btn danger sm" data-act="dodelete" data-arg="${esc(id)}">Delete trip, codes &amp; members</button><button class="btn ghost sm" data-act="cancel">Cancel</button>`:`<button class="btn ghost sm" data-act="delete" data-arg="${esc(id)}">Delete</button>`}
+      </div>
+      ${open?`<div class="codes">${codes.map(c=>`<button class="code" data-act="copy" data-arg="${esc(c.id)}" aria-label="Copy code ${esc(c.id)}"><span>${esc(c.id)}</span><span class="pill ${c.status==='active'?'ok':''}">${c.status==='active'?'used':'free'}</span></button>`).join('')}</div>`:''}
+    </div>`;
+  }).join('');
+  return `<div><div class="eyebrow">Formal Wise · Admin</div><h1 class="h1">Trips &amp; <em>codes</em></h1></div>
+  <form data-form="trip" class="card" novalidate><h2 style="font-size:18px">New trip</h2>
+    <p class="small muted" style="margin:0">Create a trip for a chapter. It stays on hold until you record their wire, then one access code is issued per paid member.</p>
+    <div class="grid2">
+      <div class="field"><label for="tchapter">Chapter *</label><input id="tchapter" name="chapter" class="input" required placeholder="Alpha Chapter"></div>
+      <div class="field"><label for="tschool">School</label><input id="tschool" name="school" class="input" placeholder="State University"></div>
+      <div class="field"><label for="tdest">Destination (city) *</label><input id="tdest" name="destination" class="input" required placeholder="Las Vegas, NV"></div>
+      <div class="field"><label for="tresort">Resort / hotel *</label><input id="tresort" name="resort" class="input" required placeholder="Resorts World Las Vegas"><span class="small muted">Shown to members instead of just the city.</span></div>
+      <div class="field"><label for="tdates">Dates shown to members</label><input id="tdates" name="dates" class="input" placeholder="Apr 9 – 11, 2027"></div>
+      <div class="field"><label for="tstart">Departure date (countdown until the itinerary is set)</label><input id="tstart" name="start" type="date" class="input"></div>
+      <div class="field"><label for="trooms">Number of rooms *</label><input id="trooms" name="rooms" type="number" min="1" max="200" class="input" required placeholder="40"><span class="small muted">Each room holds 2 members + their dates. Solo rooms are worked out at the end, and the planner adds the penthouse later if it\u2019s booked.</span></div>
+      <div class="field"><label for="ttz">Trip time zone</label><select id="ttz" name="tz" class="input">${[['America/Los_Angeles','Pacific (Las Vegas, California)'],['America/Phoenix','Arizona (Lake Havasu, Scottsdale)'],['America/Denver','Mountain'],['America/Chicago','Central'],['America/New_York','Eastern (Florida)']].map(([v,l])=>`<option value="${v}" ${v==='America/Phoenix'?'selected':''}>${l}</option>`).join('')}</select><span class="small muted">The sign-up window opens and closes at midnight in this time zone.</span></div>
+      <div class="field"><label for="tplanners">Planner emails</label><input id="tplanners" name="planners" class="input" autocapitalize="none" spellcheck="false" placeholder="planner@school.edu"><span class="small muted">They sign in with this email. Separate several with commas.</span></div>
+    </div>
+    <button class="btn" type="submit">Create trip</button></form>
+  ${cards||'<div class="card"><p class="muted" style="margin:0">No trips yet. Create one above.</p></div>'}`;
+}
+
+/* ---------- actions ---------- */
+async function guard(fn){try{await fn()}catch(e){toast(failMsg(e))}}
+function friendly(msg){const e=new Error(msg);e.friendly=true;return e}
+const acts={
+  role:a=>{st.view=a==='planner'?'planner':'admin';st.confirm='';lsSet('fw.view',st.view);render();window.scrollTo(0,0)},
+  invite:a=>guard(async()=>{const i=String(a).indexOf('|'),tid=a.slice(0,i),email=a.slice(i+1);const r=await sendInvites(tid,[email],true);toast((r.sent||[]).length?'Invite emailed to '+email+'.':inviteMsg(r).trim())}),
+  asplanner:a=>{st.view='planner';st.plannerTrip=a;st.ptab='overview';st.confirm='';lsSet('fw.view','planner');render();window.scrollTo(0,0)},
+  retry:()=>{st.netErr=false;render();boot()},
+  staffscreen:()=>{st.screen='staff';st.staff={step:'email',email:''};render();window.scrollTo(0,0)},
+  joinscreen:()=>{st.screen='join';render();window.scrollTo(0,0)},
+  staffemail:()=>{st.staff.step='email';render()},
+  staffresend:()=>guard(async()=>{const {error}=await sb.auth.signInWithOtp({email:st.staff.email,options:{shouldCreateUser:true}});if(error)throw friendly(error.message);toast('New code sent to '+st.staff.email+'.')}),
+  staffout:()=>guard(async()=>{try{await sb.auth.signOut()}catch(e){}st.screen='join';st.staff={step:'email',email:''};st.plannerTrip='';applyGuest();lastSig='';render();window.scrollTo(0,0)}),
+  delph:a=>guard(()=>call('set_penthouse',{trip:a,remove:true},'Penthouse removed.')),
+  asksignoff:a=>{st.confirm='signoff:'+a;render()},
+  signoff:a=>guard(async()=>{st.confirm='';await upd(a,{signerAge:null,signers:[]},'Room signers turned off.')}),
+  roomsclose:a=>guard(()=>upd(a,{roomsOverride:'closed'},'Closed now. Members can’t change rooms or info.')),
+  roomsnow:a=>guard(()=>upd(a,{roomsOverride:'open'},'Open now. Members can pick rooms and add info.')),
+  roomssched:a=>guard(()=>upd(a,{roomsOverride:''},'Back on the schedule.')),
+  ptab:a=>{st.ptab=a;st.confirm='';render();window.scrollTo(0,0)},
+  autosign:a=>guard(async()=>{const t=st.trips[a];const list=autoSigners(t,a,true);await upd(a,{signers:list},list.length+' of '+roomsOf(t).length+' rooms have a signer.')}),
+  redosign:a=>guard(async()=>{const t=st.trips[a];const list=autoSigners(t,a,false);await upd(a,{signers:list},'Reassigned: '+list.length+' of '+roomsOf(t).length+' rooms covered.')}),
+  editroomchoice:()=>{st.editRoomChoice=true;render()},
+  donechoice:()=>{st.editRoomChoice=false;render()},
+  tab:a=>{st.tab=a;st.editRoom=false;st.editInfo=false;st.editRoomChoice=false;render();window.scrollTo(0,0)},
+  signout:()=>guard(async()=>{try{await api('release_code',{})}catch(e){}try{await sb.auth.signOut()}catch(e){}
+    lsSet('fw.lastCode',null);applyGuest();st.signedOut=false;st.tab='home';lastSig='';render();window.scrollTo(0,0)}),
+  cancel:()=>{st.confirm='';render()},
+  person:a=>{st.openPerson=st.openPerson===a?'':a;const el=$('plist');if(el)el.innerHTML=peopleList(el.dataset.trip)},
+  editroom:()=>{st.editRoom=true;render();const i=$('hroom');if(i)i.focus()},
+  editinfo:()=>{st.editInfo=true;render();window.scrollTo(0,0)},
+  canceledit:()=>{st.editInfo=false;render();window.scrollTo(0,0)},
+  solo:()=>{const b=$('solobtn'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);b.classList.toggle('ghost',!on);$('soloval').value=on?'1':'';$('datefields').hidden=on;$('solonote').hidden=!on;$('datefields').querySelectorAll('input,select').forEach(i=>i.disabled=on)},
+  joinroom:a=>guard(async()=>{const s=validSession();if(!s)return;const c=st.codes[s.code]||{},t=st.trips[s.tripId],r=roomById(t,a),me=st.members[s.memberId]||{};if(!r)return;
+    if(r.type==='penthouse')return toast('The penthouse needs a penthouse code from your planner.');if(c.penthouse)return toast('Your code is for the penthouse.');
+    if(!roomsOpen(t))return toast('Room selection isn’t open yet.');
+    const others=roomRoster(s.tripId,a).filter(x=>x.id!==s.memberId), need=1+(hasDate(me)?1:0);
+    if(others.length>=r.maxMembers||peopleIn(others)+need>r.maxMembers*2)return toast(r.label+' is full. Pick another room.');
+    st.editRoomChoice=false;await call('choose_room',{room:a},'You’re in '+r.label+'.')}),
+  leaveroom:()=>guard(async()=>{const s=validSession();if(!s)return;if((st.codes[s.code]||{}).penthouse)return toast('Your code is for the penthouse.');if(!roomsOpen(st.trips[s.tripId]))return toast('Room changes are closed right now.');
+    st.editRoomChoice=false;await call('choose_room',{room:''},'You left the room.')}),
+  unpin:a=>guard(()=>upd(a,{pinned:{text:'',at:Date.now()}},'Announcement unpinned.')),
+  phpin:a=>{const t=st.trips[a],ph=roomsOf(t).find(r=>r.type==='penthouse'),ta=document.getElementById('pin-'+a);if(ph&&ta){ta.value='Penthouse: '+(ph.resort||'')+(ph.number?', Room #'+ph.number:'');ta.focus()}},
+  copy:a=>{copyText(a,'Copied '+a+'.')},
+  paid:a=>guard(async()=>{const m=st.members[a];if(!m)return;await call('set_paid',{member:a,paid:!m.paidChapter})}),
+  detail:a=>{st.detail=st.detail===a?'':a;render()},
+  transfer:a=>{st.confirm='tr:'+a;render()},
+  dotransfer:a=>guard(async()=>{st.confirm='';await call('transfer_code',{code:a},'Spot transferred. Send '+a+' to the new member.')}),
+  togglecodes:a=>{st.adminOpen[a]=!st.adminOpen[a];render()},
+  delete:a=>{st.confirm='del:'+a;render()},
+  dodelete:a=>guard(async()=>{st.confirm='';await call('delete_trip',{trip:a},'Trip deleted.')}),
+  activate:a=>guard(()=>call('set_wire',{trip:a},'Wire recorded. The planner can now add codes one at a time as members pay.')),
+  voidcode:a=>{st.confirm='void:'+a;render()},
+  dovoid:a=>guard(async()=>{st.confirm='';if(st.lastCode===a)st.lastCode='';if(st.lastPhCode===a)st.lastPhCode='';await call('void_code',{code:a},'Code '+a+' voided. It can’t be used anymore.')}),
+  delupdate:a=>guard(async()=>{const t=st.trips[st.plannerTrip];await upd(st.plannerTrip,{updates:(t.updates||[]).filter(u=>String(u.at)!==String(a))},'Update removed.')}),
+  delitin:a=>guard(async()=>{const t=st.trips[st.plannerTrip];await upd(st.plannerTrip,{itinerary:(t.itinerary||[]).filter(e=>e.id!==a)},'Event removed.')})
+};
+function copyText(text,ok){try{navigator.clipboard.writeText(text).then(()=>toast(ok),()=>toast('Copy blocked. The code is: '+text.split('\n')[0]))}catch(e){toast('Copy blocked. The code is: '+text.split('\n')[0])}}
+
+const forms={
+  join:f=>guard(async()=>{
+    const code=String(f.get('code')||'').trim().toUpperCase().replace(/\s+/g,'');
+    if(!code)return toast('Enter your access code.');
+    if(!/^[A-Z0-9-]{4,24}$/.test(code))return toast('Codes use letters, numbers and a dash, like VEGA-7K2QM.');
+    if(st.busy)return;st.busy='join';render();
+    try{
+      if(!(await hasSession())){
+        const {error}=await sb.auth.signInAnonymously();
+        if(error)throw friendly(/anonymous/i.test(error.message||'')?'Member sign-in isn’t turned on yet. Formal Wise needs to enable it.':'Couldn’t connect. Check your internet and try again.');
+      }
+      const r=await api('redeem_code',{code});
+      if(!r||!r.ok)return toast((r&&r.error)||'That code didn’t work.');
+      lsSet('fw.lastCode',r.code);st.signedOut=false;st.tab='home';
+      await load(true);toast('You’re in. Welcome to the trip.');
+    }finally{st.busy='';render()}
+  }),
+  staffemail:f=>guard(async()=>{const email=String(f.get('email')||'').trim().toLowerCase();
+    if(!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email))return toast('Enter a valid email address.');
+    if(st.busy)return;st.busy='otp';render();
+    try{const {error}=await sb.auth.signInWithOtp({email,options:{shouldCreateUser:true}});if(error)throw friendly(error.message);
+      st.staff={step:'code',email}}finally{st.busy='';render()}
+    const i=$('otp');if(i)i.focus()}),
+  staffcode:f=>guard(async()=>{const token=String(f.get('token')||'').replace(/\D/g,'');
+    if(token.length<6)return toast('Enter the code from the email.');
+    if(st.busy)return;st.busy='otp';render();
+    try{const {error}=await sb.auth.verifyOtp({email:st.staff.email,token,type:'email'});
+      if(error)throw friendly('That code didn’t work or expired. Check the newest email, or send a new code.');
+      st.screen='join';st.staff={step:'email',email:''};await load(true)}finally{st.busy='';render()}}),
+  room:f=>guard(async()=>{const s=validSession();if(!s)return;const r=String(f.get('room')||'').trim().replace(/^#/,'').slice(0,12);if(!r)return toast('Enter your hotel room number.');
+    const m=st.members[s.memberId]||{};if(!roomIdOf(m))return toast('Pick a room first.');
+    st.editRoom=false;await call('set_hotel_room',{room:r},'Room #'+r+' saved for your whole room.')}),
+  ph:f=>guard(async()=>{const tid=String(f.get('trip')||''),t=st.trips[tid];if(!t)return;const number=String(f.get('number')||'').trim().replace(/^#/,'');
+    if(!number)return toast('Enter the penthouse room number.');const max=Math.max(2,Math.min(4,parseInt(f.get('max'),10)||4));
+    await call('set_penthouse',{trip:tid,resort:String(f.get('resort')||'').trim(),number,max},'Penthouse saved. Send up to '+max+' penthouse codes below.')}),
+  phcode:(f,el)=>guard(async()=>{const tid=String(f.get('trip')||''),payer=String(f.get('payer')||'').trim().slice(0,80);
+    if(!payer)return toast('Enter the name of the penthouse member.');if(st.busy==='code')return;
+    st.busy='code';try{const r=await api('add_code',{trip:tid,payer,penthouse:true});st.lastPhCode=r.code;el.reset();await refresh();toast('Penthouse code '+r.code+' added for '+payer+'.')}
+    finally{st.busy='';render()}}),
+  signage:f=>guard(async()=>{const tid=String(f.get('trip')||''),a=parseInt(f.get('age'),10),t=st.trips[tid];if(!t||!(a>=16&&a<=30))return;
+    const was=signAge(t);
+    await upd(tid,{signerAge:a},was?(a===was?'Age unchanged.':'Signers now need to be '+a+'+. Anyone under '+a+' was taken off their room.'):'Room signers on: '+a+'+ at check-in.')}),
+  addcode:(f,el)=>guard(async()=>{const tid=String(f.get('trip')||''),payer=String(f.get('payer')||'').trim().slice(0,80);
+    if(!payer)return toast('Enter the name of the member who paid.');if(st.busy==='code')return;
+    st.busy='code';try{const r=await api('add_code',{trip:tid,payer});st.lastCode=r.code;el.reset();await refresh();toast('Code '+r.code+' added for '+payer+'.')}
+    finally{st.busy='';render()}}),
+  due:f=>guard(async()=>{const tid=String(f.get('trip')||''),o=String(f.get('open')||''),c=String(f.get('close')||'');if(!st.trips[tid])return;
+    if(!o||!c)return toast('Pick both the open and close days.');if(c<o)return toast('The close day has to be on or after the open day.');
+    await upd(tid,{openDay:o,closeDay:c,roomsUnlock:o,infoDue:c},'Opens '+fmtDay(dayTs(o))+', closes end of '+fmtDay(dayTs(c))+'.')}),
+  pin:f=>guard(async()=>{const tid=String(f.get('trip')||''),text=String(f.get('text')||'').trim();if(!st.trips[tid])return;if(!text)return toast('Write the announcement first.');
+    await upd(tid,{pinned:{text:text.slice(0,400),at:Date.now()}},'Announcement pinned.')}),
+  info:(f,el)=>guard(async()=>{const s=validSession();if(!s)return;if(!roomsOpen(st.trips[s.tripId]))return toast('Info isn’t open right now.');
+    if(!el.checkValidity()){el.reportValidity();return toast('Fill in every required field.')}
+    const dobOf=p=>{const y=String(f.get(p+'dobY')||''),mo=String(f.get(p+'dobM')||''),d=String(f.get(p+'dobD')||'');if(!y||!mo||!d)return '';const dt=new Date(+y,+mo-1,+d);return dt.getMonth()===+mo-1?y+'-'+mo+'-'+d:'bad'};
+    const solo=!!f.get('solo');if(dobOf('y_')==='bad'||(!solo&&dobOf('d_')==='bad'))return toast('That birthday isn’t a real date. Check the month and day.');
+    const g=p=>({name:String(f.get(p+'name')||'').trim(),dob:dobOf(p),phone:String(f.get(p+'phone')||'').trim(),ecName:String(f.get(p+'ecName')||'').trim(),ecPhone:String(f.get(p+'ecPhone')||'').trim()});
+    await call('save_info',{you:g('y_'),date:solo?{}:g('d_'),solo});
+    st.editInfo=false;render();window.scrollTo(0,0);toast('Information complete.')}),
+  trip:(f,el)=>guard(async()=>{
+    if(!el.checkValidity()){el.reportValidity();return toast('Fill in chapter, city, resort and number of rooms.')}
+    const n=Math.max(1,Math.min(200,parseInt(f.get('rooms'),10)||0));
+    const planners=String(f.get('planners')||'').split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@'));
+    const r=await call('create_trip',{chapter:String(f.get('chapter')).trim(),school:String(f.get('school')||'').trim(),destination:String(f.get('destination')).trim(),resort:String(f.get('resort')||'').trim(),
+      dates:String(f.get('dates')||'').trim(),start:String(f.get('start')||''),rooms:n,tz:String(f.get('tz')||''),planners});
+    const inv=planners.length&&r&&r.trip?await sendInvites(r.trip):null;
+    toast('Trip created. Up to '+(n*2)+' codes.'+(inv?inviteMsg(inv):''))}),
+  planners:f=>guard(async()=>{const tid=String(f.get('trip')||'');const emails=String(f.get('emails')||'').split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@'));
+    await call('set_planners',{trip:tid,emails});
+    if(!emails.length)return toast('Planners removed.');
+    const inv=await sendInvites(tid);toast('Planners saved.'+(inv&&!inv.error&&!(inv.sent||[]).length&&!(inv.failed||[]).length?' Everyone listed already has an invite.':inviteMsg(inv)))}),
+  update:(f,el)=>guard(async()=>{const text=String(f.get('text')||'').trim();if(!text)return toast('Write a message first.');const t=st.trips[st.plannerTrip];
+    await upd(st.plannerTrip,{updates:[{text:text.slice(0,600),at:Date.now(),by:'Planner'}].concat(t.updates||[]).slice(0,30)},'Update posted.')}),
+  itin:(f,el)=>guard(async()=>{if(!el.checkValidity()){el.reportValidity();return toast('Pick a date, a time and name the event.')}const t=st.trips[st.plannerTrip];
+    const item={id:'e'+Date.now().toString(36),date:String(f.get('date')),time:String(f.get('time')),title:String(f.get('title')).trim(),place:String(f.get('place')||'').trim()};
+    if(evAt(item)==null)return toast('That date or time isn’t valid.');
+    await upd(st.plannerTrip,{itinerary:(t.itinerary||[]).concat([item]).slice(0,80)},'Event added.')})
+};
+
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||b.disabled)return;const fn=acts[b.dataset.act];if(fn){e.preventDefault();fn(b.dataset.arg)}});
+document.addEventListener('submit',e=>{const el=e.target.closest('form[data-form]');if(!el)return;e.preventDefault();if(!sb)return toast('The app isn’t connected.');const fn=forms[el.dataset.form];if(fn){const a=document.activeElement;if(a&&a.blur)a.blur();fn(new FormData(el),el)}});
+document.addEventListener('toggle',e=>{const d=e.target;if(d&&d.dataset&&d.dataset.col){st.col=st.col||{};st.col[d.dataset.col]=d.open}},true);
+document.addEventListener('input',e=>{if(e.target.id==='pq'){st.q=e.target.value;const el=$('plist');if(el)el.innerHTML=peopleList(el.dataset.trip)}});
+document.addEventListener('change',e=>{if(e.target.dataset&&e.target.dataset.room&&e.target.id.startsWith('sg-')){const tid=st.plannerTrip,t=st.trips[tid],room=e.target.dataset.room,key=e.target.value;
+    const cur=currentSigners(t,tid);if(key&&Object.entries(cur).some(([r,k])=>k===key&&r!==room)){e.target.blur();render();toast('That person already signs another room. Clear them there first.');return}
+    delete cur[room];if(key)cur[room]=key;e.target.blur();
+    guard(()=>upd(tid,{signers:Object.entries(cur).map(([room,key])=>({room,key}))},key?'Signer updated.':'Signer removed.'));return}
+  if(e.target.id==='ptrip'){st.plannerTrip=e.target.value;st.confirm='';st.detail='';e.target.blur();render()}});
+
+/* ---------- start ---------- */
+let polling=false;
+async function boot(){try{await load(true)}catch(e){st.netErr=true;render()}}
+async function poll(){if(polling||!sb||!st.loaded||st.role==='guest'||document.visibilityState!=='visible')return;polling=true;try{await load(false)}catch(e){}finally{polling=false}}
+setInterval(poll,8000);
+document.addEventListener('visibilitychange',()=>{if(document.visibilityState==='visible')poll()});
+(function init(){
+  const cfg=window.FW_CONFIG||{};
+  if(!window.supabase||!window.supabase.createClient||!cfg.supabaseUrl||!cfg.supabaseKey){st.fatal='setup';render();return}
+  sb=window.supabase.createClient(cfg.supabaseUrl,cfg.supabaseKey,{auth:{persistSession:true,autoRefreshToken:true,detectSessionInUrl:false}});
+  render();boot();
+})();
+})();
+</script>
+</body>
+</html>
