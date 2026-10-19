@@ -223,6 +223,11 @@ function roomRoster(tripId,rid){return tripMembers(tripId).filter(m=>roomIdOf(m)
 /* One roommate's hotel number covers the whole room: the most recently saved number in the room wins; the penthouse uses the admin's number. */
 function roomNo(t,tripId,rid){if(!rid)return '';const r=roomById(t,rid);if(r&&r.type==='penthouse'&&r.number)return r.number;
   const ro=roomRoster(tripId,rid).filter(x=>x.hotelRoom).sort((a,b)=>(b.hotelAt||0)-(a.hotelAt||0));return ro.length?ro[0].hotelRoom:''}
+/* What everyone else sees for a room in People: a solo room gets a plain "Room N" label so it looks like every other room. */
+function publicRoomTitle(t,tripId,rid){const r=roomById(t,rid);if(!r||r.type!=='solo')return roomTitle(t,tripId,rid);
+  let l=r.label||'';if(!/^Room \d+$/.test(l)){const rs=roomsOf(t),nums=rs.filter(x=>x.type!=='solo'&&x.type!=='penthouse').map(x=>+((/^Room (\d+)$/.exec(x.label||'')||[])[1]||0)),top=Math.max(rs.filter(x=>x.type!=='penthouse').length-rs.filter(x=>x.type==='solo').length,...nums,0);
+    l='Room '+(top+1+rs.filter(x=>x.type==='solo').findIndex(x=>x.id===rid))}
+  const n=roomNo(t,tripId,rid);return n?l+' - #'+n:l}
 function hotelOf(t,m){return m?roomNo(t,m.tripId,roomIdOf(m)):''}
 function roomTitle(t,tripId,rid){const l=roomLabel(t,rid);if(!l)return '';const n=roomNo(t,tripId,rid);return n?l+' - #'+n:l}
 function pinnedBlock(t,big){const p=t&&t.pinned;if(!p||!p.text)return '';
@@ -236,10 +241,6 @@ function pinForm(t,tripId){const ph=roomsOf(t).find(r=>r.type==='penthouse'),p=t
 const capacity=t=>roomsOf(t).reduce((s,r)=>s+r.maxMembers,0);
 const regCap=t=>roomsOf(t).filter(r=>(r.type||'standard')==='standard').reduce((s,r)=>s+r.maxMembers,0);
 const phRoom=t=>roomsOf(t).find(r=>r.type==='penthouse')||null;
-/* Guaranteed solo rooms: names Formal Wise reserves when creating the trip. Each one holds an empty room (2 regular spots) until the planner sends that member's solo code. */
-const soloHolds=t=>((t&&t.soloHolds)||[]).filter(Boolean);
-function pendingHolds(t,id){const got=tripCodes(id).filter(c=>c.room&&c.status!=='void').map(c=>String(c.payer||'').trim().toLowerCase());return soloHolds(t).filter(n=>!got.includes(String(n).trim().toLowerCase()))}
-const namesFrom=v=>Array.from(new Set(String(v||'').split(/[\n,;]+/).map(x=>x.trim().replace(/\s+/g,' ').slice(0,80)).filter(Boolean)));
 const regCodes=id=>tripCodes(id).filter(c=>!c.penthouse&&!c.room), phCodes=id=>tripCodes(id).filter(c=>c.penthouse), soloCodes=id=>tripCodes(id).filter(c=>c.room);
 function daysTo(start){if(!start)return null;const t=Date.parse(start+'T00:00:00');if(isNaN(t))return null;return Math.max(0,Math.ceil((t-Date.now())/86400000))}
 const validSession=()=>st.role==='member'&&st.me&&st.me.code?st.me:null;
@@ -382,12 +383,15 @@ function nextTransition(t){if(t&&t.roomsOverride)return null;const n=Date.now(),
 function roomsOpenAt(t){return winOpenAt(t)}
 const isoDay=ts=>{const d=new Date(ts);return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0')};
 function roomsOpen(t){return winState(t)==='open'}
-/* Date info (date names + their emergency contacts) is open from the start until the end of its due date. Your own info is always open. */
-const dateDueOf=t=>(t&&(t.dateDue||t.closeDay))||'';
-/* Your own info is due when room selection opens, unless the planner picked another day (due at the end of that day). It never locks. */
-function youDueAt(t){const d=t&&dayTs(t.youDue);if(d)return d+DAY;return winOpenAt(t)}
-function dateCloseAt(t){const d=dayTs(dateDueOf(t));return d?d+DAY:null}
-function dateOpen(t){if(t&&t.dateOverride==='open')return true;if(t&&t.dateOverride==='closed')return false;const c=dateCloseAt(t);return c==null||Date.now()<c}
+/* One window: room selection and date info open on the same day and close at the end of the same day.
+   A member's own info is open from the start and closes with that window. */
+const dateDueOf=t=>(t&&t.closeDay)||'';
+function youDueAt(t){return winCloseAt(t)}
+function dateCloseAt(t){return winCloseAt(t)}
+function dateOpen(t){return winState(t)==='open'}
+function youOpen(t){return winState(t)!=='closed'}
+/* What to say about date info when it isn't open. */
+function dateShutTxt(t){const ws=winState(t),oa=winOpenAt(t);return ws==='closed'?'Date info closed':ws==='before'&&oa?'Opens '+fmtDay(oa):'Opens with room selection'}
 function dobOf(f,p){const y=String(f.get(p+'dobY')||''),mo=String(f.get(p+'dobM')||''),d=String(f.get(p+'dobD')||'');if(!y||!mo||!d)return '';const dt=new Date(+y,+mo-1,+d);return dt.getMonth()===+mo-1?y+'-'+mo+'-'+d:'bad'}
 function personFrom(f,p){return {name:String(f.get(p+'name')||'').trim(),dob:dobOf(f,p),phone:String(f.get(p+'phone')||'').trim(),ecName:String(f.get(p+'ecName')||'').trim(),ecPhone:String(f.get(p+'ecPhone')||'').trim()}}
 const CHECK_SVG='<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="m8 12 3 3 5-6"/></svg>';
@@ -408,9 +412,10 @@ function homeTab(trip,tripId,m){
   {const nt=nextTransition(trip);if(nt)st.unlockAt=st.unlockAt?Math.min(st.unlockAt,nt):nt}
   if(dc&&dc>Date.now())st.unlockAt=st.unlockAt?Math.min(st.unlockAt,dc):dc;
   const roomSub=ws==='open'?(ce?{t:'Due '+longDay(ce-1),due:ce}:{t:''}):ws==='before'?{t:'Opens '+longDay(oa)}:ws==='closed'?{t:'Closed, ask your planner',warn:1}:{t:'Opens soon'};
-  const dateSub=dOpen?(dc?{t:'Due '+longDay(dc-1),due:dc}:{t:''}):{t:'Closed, ask your planner',warn:1};
+  const dateSub=roomSub;
+  const youSub=ws==='closed'?{t:'Closed, ask your planner',warn:1}:(ce?{t:'Due '+longDay(ce-1),due:ce}:{t:'Any time'});
   const todos=[
-    {l:'Add your info',done:youDone(m),go:'info',sub:(yd=>!yd?{t:'Any time'}:Date.now()<yd?{t:'Due '+longDay(yd-1),due:yd}:{t:'Past due, add it now',warn:1})(youDueAt(trip))},
+    {l:'Add your info',done:youDone(m),go:'info',sub:youSub},
     {l:'Add your date’s info',done:dateDone(m),go:'info',sub:dateSub},
     {l:'Pick your room & roommates',done:!!rid,go:'room',sub:roomSub}]
     .concat(rid?[{l:'Add hotel room # after check-in',done:!!hr,go:'room',sub:{t:'At check-in'}}]:[]);
@@ -421,7 +426,7 @@ function homeTab(trip,tripId,m){
   const signElse=mine.filter(([room])=>room!==roomIdOf(m)).map(([room,k])=>`<div class="small" data-signer><span class="muted">${k.endsWith(':y')?'You sign for':'Your date signs for'}</span> <b>${esc(roomTitle(trip,tripId,room))}</b></div>`).join('');
   const status=`<div class="grid2">
     <button class="card" style="text-align:left" data-act="tab" data-arg="room"><div class="eyebrow">Your room</div><div style="font-family:var(--display);font-size:22px;font-weight:600">${rid?esc(roomTitle(trip,tripId,rid)):'Not picked yet'}</div><div class="small muted">${hr?'Checked in':(rid?'Add room # at check-in':'Pick a room')}</div>${roomSignerLine(trip,tripId,rid,myId())}${signElse}</button>
-    <button class="card" style="text-align:left" data-act="tab" data-arg="info"><div class="eyebrow">Your date</div><div style="font-family:var(--display);font-size:22px;font-weight:600">${m.solo?'Going solo':(m.date&&m.date.name?esc(m.date.name):'Not added')}</div><div class="small muted">${dateDone(m)?'Date info complete':(dOpen?(dc?'Due '+esc(fmtDay(dc-1)):'Add when you’re ready'):'Date info closed')}</div></button>
+    <button class="card" style="text-align:left" data-act="tab" data-arg="info"><div class="eyebrow">Your date</div><div style="font-family:var(--display);font-size:22px;font-weight:600">${m.solo?'Going solo':(m.date&&m.date.name?esc(m.date.name):'Not added')}</div><div class="small muted">${dateDone(m)?'Date info complete':(dOpen?(dc?'Due '+esc(fmtDay(dc-1)):'Add when you’re ready'):esc(dateShutTxt(trip)))}</div></button>
   </div>`;
   const head=`<div class="between"><div class="tm">FORMAL WISE</div><button class="btn ghost sm" data-act="signout">Sign out</button></div>${heroBlock(trip)}`;
   if(allDone) return `${head}${pinnedBlock(trip,true)}${updatesBlock(trip,true)}${status}`;
@@ -489,26 +494,27 @@ function infoFields(prefix,o,disabled){
 function windowLock(trip){const ws=winState(trip),oa=winOpenAt(trip);
   const title=ws==='closed'?'Room selection is closed':(oa&&ws==='before'?'Room selection opens '+esc(fmtDay(oa)):'Room selection isn’t open yet');
   const body=ws==='closed'?'Room selection closed'+(trip.closeDay?' on '+esc(dueTxt(trip)):'')+'. Ask your planner if you need a change.':
-    (oa?'Rooms and roommates open on <b>'+esc(fmtDay(oa))+'</b>'+(trip.closeDay?' and close at the end of <b>'+esc(dueTxt(trip))+'</b>':'')+'.':'Your planner will set the day room selection opens.');
+    (oa?'Rooms, roommates and date info open on <b>'+esc(fmtDay(oa))+'</b>'+(trip.closeDay?' and close at the end of <b>'+esc(dueTxt(trip))+'</b>':'')+'.':'Your planner will set the day room selection and date info open.');
   return `<div class="card strong" id="roomslocked" style="gap:14px"><div class="row" style="gap:10px">${LOCK_SVG}<b style="font-size:18px">${title}</b></div>
-    <p style="margin:0">${body}</p>${ws==='closed'?'':'<div class="small muted">You can add your info and your date in the meantime.</div>'}</div>`}
+    <p style="margin:0">${body}</p>${ws==='closed'?'':'<div class="small muted">You can add your own info in the meantime.</div>'}</div>`}
 function infoTab(m){
-  const trip=st.trips[m.tripId], dOpen=dateOpen(trip), dc=dateCloseAt(trip), solo=!!m.solo;
+  const trip=st.trips[m.tripId], dOpen=dateOpen(trip), dc=dateCloseAt(trip), solo=!!m.solo, yOpen=youOpen(trip), ws=winState(trip), oa=winOpenAt(trip);
   const fmt=d=>{const t=Date.parse(d+'T00:00:00');return isNaN(t)?esc(d):new Date(t).toLocaleDateString([], {month:'short',day:'numeric',year:'numeric'})};
   const who=o=>`<div style="display:flex;flex-direction:column;gap:3px;min-width:0"><div style="font-family:var(--display);font-size:22px;font-weight:600">${esc(o.name)}</div><div class="small muted">Born ${fmt(o.dob)} · ${esc(fmtPhone(o.phone))}</div><div class="small muted">Emergency: ${esc(o.ecName)} · ${esc(fmtPhone(o.ecPhone))}</div></div>`;
   const done=t=>`<div class="row" style="gap:10px;color:var(--ok)">${CHECK_SVG}<b style="font-size:17px">${t}</b></div>`;
   const head=`<div><div class="eyebrow">Guest list</div><h1 class="h1">You &amp; your <em>date</em></h1></div>`;
-  const youCard=youDone(m)&&!st.editYou
-    ?`<section class="card strong" id="youcard" style="gap:14px"><div class="eyebrow">You</div>${done('Your info is complete')}${who(m.you)}<button class="btn ghost sm" data-act="edityou" style="align-self:flex-start">Edit my info</button></section>`
+  const youCard=youDone(m)&&(!st.editYou||!yOpen)
+    ?`<section class="card strong" id="youcard" style="gap:14px"><div class="eyebrow">You</div>${done('Your info is complete')}${who(m.you)}${yOpen?'<button class="btn ghost sm" data-act="edityou" style="align-self:flex-start">Edit my info</button>':'<p class="small muted" style="margin:0">Info is closed. Ask your planner if something needs to change.</p>'}</section>`
+    :!yOpen?`<section class="card strong" id="youcard" style="gap:14px"><div class="eyebrow">You</div><div class="row" style="gap:10px">${LOCK_SVG}<b style="font-size:18px">Your info is closed</b></div><p style="margin:0">Info closed${trip.closeDay?' at the end of '+esc(dueTxt(trip)):''}. Ask your planner if you still need to add it.</p></section>`
     :`<form data-form="you" class="card" id="youcard" novalidate><h2 class="eyebrow">You</h2>
-      <p class="small muted" style="margin:0">${(yd=>yd?'<b>Due '+esc(fmtDay(yd-1))+'.</b> ':'')(youDueAt(trip))}Use your legal name, since it goes on the guest list. Your phone number and emergency contact are shown to others on this trip in People.</p>
+      <p class="small muted" style="margin:0">${(yd=>yd?'<b>Due '+esc(fmtDay(yd-1))+'.</b> ':'')(youDueAt(trip))}You can add this any time until then. Use your legal name, since it goes on the guest list. Your phone number and emergency contact are shown to others on this trip in People.</p>
       ${infoFields('y_',m.you,false)}
       <button class="btn" type="submit">Save my info</button>${youDone(m)?'<button type="button" class="btn ghost" data-act="canceledityou">Cancel</button>':''}</form>`;
   let dateCard;
   if(dateDone(m)&&!st.editDate) dateCard=`<section class="card strong" id="datecard" style="gap:14px"><div class="eyebrow">Your date</div>${done(solo?'Going solo':'Your date’s info is complete')}${solo?'<p class="small muted" style="margin:0">No date for this trip.</p>':who(m.date)}
-      ${dOpen?'<button class="btn ghost sm" data-act="editdate" style="align-self:flex-start">Edit date info</button>':'<p class="small muted" style="margin:0">Date info is closed. Ask your planner if something needs to change.</p>'}</section>`;
-  else if(!dOpen) dateCard=`<section class="card strong" id="datecard" style="gap:14px"><div class="eyebrow">Your date</div><div class="row" style="gap:10px">${LOCK_SVG}<b style="font-size:18px">Date info is closed</b></div>
-      <p style="margin:0">The due date for date names and emergency contacts${dateDueOf(trip)?' was '+esc(fmtDay(dc-1)):' has passed'}. Ask your planner if you still need to add your date.</p></section>`;
+      ${dOpen?'<button class="btn ghost sm" data-act="editdate" style="align-self:flex-start">Edit date info</button>':'<p class="small muted" style="margin:0">'+(ws==='closed'?'Date info is closed. Ask your planner if something needs to change.':'Editing opens with room selection.')+'</p>'}</section>`;
+  else if(!dOpen) dateCard=`<section class="card strong" id="datecard" style="gap:14px"><div class="eyebrow">Your date</div><div class="row" style="gap:10px">${LOCK_SVG}<b style="font-size:18px">${ws==='closed'?'Date info is closed':ws==='before'&&oa?'Date info opens '+esc(fmtDay(oa)):'Date info isn’t open yet'}</b></div>
+      <p style="margin:0">${ws==='closed'?'Date names and emergency contacts closed'+(trip.closeDay?' at the end of '+esc(dueTxt(trip)):'')+'. Ask your planner if you still need to add your date.':'Date names and emergency contacts open the same day as room selection'+(oa?', on <b>'+esc(fmtDay(oa))+'</b>':'')+(trip.closeDay?', and close at the end of <b>'+esc(dueTxt(trip))+'</b>':'')+'.'}</p></section>`;
   else dateCard=`<form data-form="date" class="card" id="datecard" novalidate><div class="between"><h2 class="eyebrow">Your date</h2>
       <button type="button" class="btn ${solo?'':'ghost'} sm" data-act="solo" aria-pressed="${solo}" id="solobtn">Going solo</button></div>
       <p class="small muted" style="margin:0">${dc?'<b>Due '+esc(fmtDay(dc-1))+'.</b> ':''}You can come back and add this later. Use their legal name.</p>
@@ -535,7 +541,7 @@ function peopleEntries(tripId){
   const out=[], t=st.trips[tripId];
   tripMembers(tripId).forEach(m=>{
     if(m.you&&m.you.name){
-      const room=hotelOf(t,m), group=roomTitle(t,tripId,roomIdOf(m));
+      const room=hotelOf(t,m), group=publicRoomTitle(t,tripId,roomIdOf(m));
       const d=hasDate(m)?m.date.name:'';
       out.push({key:m.id+':y',pair:m.id,lead:true,name:m.you.name,partner:d,role:d?'Member · with '+d:(m.solo?'Member · going solo':'Member'),phone:m.you.phone||'',ecName:m.you.ecName||'',ecPhone:m.you.ecPhone||'',room,group});
       if(d)out.push({key:m.id+':d',pair:m.id,lead:false,name:d,partner:m.you.name,role:'Date of '+m.you.name,phone:(m.date&&m.date.phone)||'',ecName:(m.date&&m.date.ecName)||'',ecPhone:(m.date&&m.date.ecPhone)||'',room,group});
@@ -608,7 +614,6 @@ function plannerView(){
     <div class="stat"><span>Paid chapter · planners only</span><b>${mem.filter(m=>m.paidChapter).length}/${active.length}</b></div>
   </div>
   ${deadlineCard(t,id,mem)}
-  ${dateDueCard(t,id,mem)}
   ${finalRoomsCard(t,id,codes,mem)}
   ${penthouseCard(t,id)}
   ${soloCard(t,id)}
@@ -704,9 +709,9 @@ function signersView(t,id){
   </div>`;
 }
 function addCodeCard(t,id,codes){
-  const held=pendingHolds(t,id).length, max=Math.max(0,regCap(t)-2*held), n=regCodes(id).length, full=n>=max, last=st.lastCode&&st.codes[st.lastCode]&&st.codes[st.lastCode].tripId===id?st.codes[st.lastCode]:null;
+  const max=regCap(t), n=regCodes(id).length, full=n>=max, last=st.lastCode&&st.codes[st.lastCode]&&st.codes[st.lastCode].tripId===id?st.codes[st.lastCode]:null;
   return `<form data-form="addcode" class="card strong" novalidate><div class="between"><h2 style="font-size:18px">Add a code</h2><span class="pill ${full?'warn':'ok'}">${n} of ${max} added</span></div>
-    <p class="small muted" style="margin:0">Add one code each time a member pays the chapter. Each code is one paid spot and can only be made one at a time. The max is what the regular rooms hold. Penthouse and solo room codes are added in their own sections.${held?' '+held+' room'+(held===1?' is':'s are')+' held for guaranteed solo rooms (see Solo rooms).':''}</p>
+    <p class="small muted" style="margin:0">Add one code each time a member pays the chapter. Each code is one paid spot and can only be made one at a time. The max is what the regular rooms hold. Penthouse and solo room codes are added in their own sections.</p>
     <input type="hidden" name="trip" value="${esc(id)}">
     ${full?'<div class="note">Every spot in the room block has a code. Void an unused code or transfer a spot if someone drops out.</div>':`<div class="row" style="flex-wrap:nowrap;align-items:flex-end"><div class="field grow"><label for="payer">Who paid?</label><input id="payer" name="payer" class="input" required placeholder="Member\u2019s full name" autocomplete="off"></div><button class="btn" type="submit" ${st.busy==='code'?'disabled':''}>Add 1 code</button></div>`}
     ${last?`<div class="info between"><span>New code for <b>${esc(last.payer||'')}</b></span><button type="button" class="code" style="width:auto" data-act="copy" data-arg="${esc(st.lastCode)}">${esc(st.lastCode)} <span class="small">Copy</span></button></div>`:''}</form>`}
@@ -737,16 +742,16 @@ function finalRoomsCard(t,id,codes,mem){
     </div>
     ${final?'<div class="small" style="color:var(--ok);font-weight:700">All codes are claimed and everyone has a room. These numbers are final.</div>':`<div class="small">Waiting on: ${[unclaimed?unclaimed+' code'+(unclaimed>1?'s':'')+' not claimed yet':'',noRoom?noRoom+' member'+(noRoom>1?'s':'')+' without a room':'',!codes.length?'no codes added yet':''].filter(Boolean).join(' · ')}</div>`}</div>`}
 function deadlineCard(t,id,mem){
-  const ws=winState(t), oa=winOpenAt(t), ov=t.roomsOverride||'', picked=mem.filter(m=>roomIdOf(m)).length;
+  const ws=winState(t), oa=winOpenAt(t), ov=t.roomsOverride||'', picked=mem.filter(m=>roomIdOf(m)).length, you=mem.filter(youDone).length, withDate=mem.filter(m=>hasDate(m)&&dateDone(m)).length, solo=mem.filter(m=>m.solo).length;
   const pill={open:'<span class="pill ok">Open</span>',before:'<span class="pill warn">Not open yet</span>',closed:'<span class="pill">Closed</span>',unset:'<span class="pill warn">Not scheduled</span>'}[ws];
-  return `<form data-form="due" class="card" novalidate><div class="between"><h2 style="font-size:18px">Room selection</h2>${pill}</div>
-    <p class="small muted" style="margin:0">Members pick their room and roommates between these days.</p>
+  return `<form data-form="due" class="card" novalidate><div class="between"><h2 style="font-size:18px">Rooms, roommates &amp; date info</h2>${pill}</div>
+    <p class="small muted" style="margin:0">Room selection and date info (date names and emergency contacts) open on the first day and close at the end of the last day. Members can add their own info any time until it closes.</p>
     <input type="hidden" name="trip" value="${esc(id)}">
     <div class="grid2"><div class="field"><label for="openday">Opens</label><input id="openday" name="open" type="date" class="input" required value="${esc(oa?isoDay(oa):'')}"></div>
       <div class="field"><label for="closeday">Closes (end of day)</label><input id="closeday" name="close" type="date" class="input" required value="${esc(t.closeDay||'')}"></div></div>
     ${ov?`<div class="small muted">${ov==='open'?'Opened early by you.':'Closed early by you.'} The dates above are ignored until you go back to the schedule.</div>`:''}
     <div class="row"><button class="btn sm" type="submit">Save dates</button>${ov?`<button type="button" class="btn ghost sm" data-act="roomssched" data-arg="${esc(id)}">Go back to the schedule</button>`:(ws==='open'?`<button type="button" class="btn ghost sm" data-act="roomsclose" data-arg="${esc(id)}">Close now</button>`:`<button type="button" class="btn ghost sm" data-act="roomsnow" data-arg="${esc(id)}">Open now</button>`)}</div>
-    <div class="small" style="border-top:1px solid var(--line);padding-top:10px">So far: <b>${picked}</b> picked a room · <b>${mem.length-picked}</b> haven’t${mem.length<tripCodes(id).length?' · '+(tripCodes(id).length-mem.length)+' haven’t joined':''}</div></form>`}
+    <div class="small" style="border-top:1px solid var(--line);padding-top:10px">So far: <b>${picked}</b> picked a room · <b>${you}</b> added their own info · <b>${withDate}</b> bringing a date · <b>${solo}</b> going solo${mem.length<tripCodes(id).length?' · '+(tripCodes(id).length-mem.length)+' haven’t joined':''}</div></form>`}
 function dateDueCard(t,id,mem){
   const due=dateDueOf(t), open=dateOpen(t), withDate=mem.filter(m=>hasDate(m)&&dateDone(m)).length, solo=mem.filter(m=>m.solo).length, missing=mem.length-withDate-solo, you=mem.filter(youDone).length;
   const oa=winOpenAt(t), defYou=oa?isoDay(oa-DAY):'', youVal=t.youDue||defYou;
@@ -762,11 +767,9 @@ function dateDueCard(t,id,mem){
 function soloCard(t,id){
   const sc=soloCodes(id), last=st.lastSoloCode&&st.codes[st.lastSoloCode]&&st.codes[st.lastSoloCode].tripId===id?st.codes[st.lastSoloCode]:null;
   const free=roomsOf(t).filter(r=>(r.type||'standard')==='standard'&&!roomRoster(id,r.id).length).length, can=free>0&&regCodes(id).length<=regCap(t)-2;
-  const holds=pendingHolds(t,id);
-  return `<details class="card fold" data-col="solo" ${(st.col&&st.col.solo)||holds.length?'open':''}><summary><h2 style="font-size:18px">Solo rooms <span class="muted" style="font-weight:600">(${sc.length}${holds.length?' · '+holds.length+' guaranteed':''})</span></h2><span class="chev" aria-hidden="true"></span></summary>
+  return `<details class="card fold" data-col="solo" ${st.col&&st.col.solo?'open':''}><summary><h2 style="font-size:18px">Solo rooms <span class="muted" style="font-weight:600">(${sc.length})</span></h2><span class="chev" aria-hidden="true"></span></summary>
     <p class="small muted" style="margin:0">For members who paid for their own room. A solo code puts that member straight into a 1-person room (plus their date). Solo rooms never show up in room selection, and the member can’t change it. Each one uses an empty room from your block, so the regular code limit goes down by 2.</p>
     <form data-form="solocode" class="col" id="solocodes" style="gap:10px;width:100%" novalidate><input type="hidden" name="trip" value="${esc(id)}">
-      ${holds.length?`<div class="info col" data-holds style="gap:8px;align-items:stretch"><b>Guaranteed by Formal Wise</b><span class="small">These members already have a solo room held for them. Send their code once they pay.</span>${holds.map(n=>`<div class="between" style="flex-wrap:wrap"><span style="font-weight:600">${esc(n)}</span><button type="button" class="btn gold sm" data-act="holdcode" data-arg="${esc(id)}|${esc(n)}" ${st.busy==='code'||t.wire!=='received'?'disabled':''}>${t.wire!=='received'?'Waiting on wire':'Send solo code'}</button></div>`).join('')}</div>`:''}
       ${can?`<div class="row" style="flex-wrap:nowrap;align-items:flex-end"><div class="field grow"><label for="solopayer">Who’s getting a solo room?</label><input id="solopayer" name="payer" class="input" required placeholder="Member’s full name" autocomplete="off"></div><button class="btn gold" type="submit" ${st.busy==='code'?'disabled':''}>Send 1 solo code</button></div>`
         :'<div class="note">No empty room left to turn into a solo room. Void an unused regular code first.</div>'}
       ${last?`<div class="info between"><span>Solo code for <b>${esc(last.payer||'')}</b></span><button type="button" class="code" style="width:auto" data-act="copy" data-arg="${esc(st.lastSoloCode)}">${esc(st.lastSoloCode)} <span class="small">Copy</span></button></div>`:''}
@@ -786,9 +789,6 @@ function adminView(){
       <form data-form="planners" class="row" style="align-items:flex-end" novalidate><input type="hidden" name="trip" value="${esc(id)}">
         <div class="field grow" style="min-width:220px"><label for="pl-${esc(id)}">Planner emails (comma-separated)</label><input id="pl-${esc(id)}" name="emails" class="input" autocapitalize="none" spellcheck="false" value="${esc((t.planners||[]).join(', '))}" placeholder="planner@school.edu"></div>
         <button class="btn ghost sm" type="submit">Save planners</button></form>
-      <form data-form="soloholds" class="row" style="align-items:flex-end" novalidate><input type="hidden" name="trip" value="${esc(id)}">
-        <div class="field grow" style="min-width:220px"><label for="sh-${esc(id)}">Guaranteed solo rooms (optional, comma-separated)</label><input id="sh-${esc(id)}" name="names" class="input" value="${esc(soloHolds(t).join(', '))}" placeholder="Full names"></div>
-        <button class="btn ghost sm" type="submit">Save solo rooms</button></form>
       ${(t.planners||[]).length?`<div class="list" data-planners>${t.planners.map(e=>{const inv=(t.invited||[]).includes(e);return `<div class="li" style="min-height:48px;flex-wrap:wrap"><div class="grow small" style="min-width:180px;overflow-wrap:anywhere"><b>${esc(e)}</b> <span class="pill ${inv?'ok':'warn'}">${inv?'Invite sent':'Not invited yet'}</span></div><button class="btn ghost sm" data-act="invite" data-arg="${esc(id)}|${esc(e)}">${inv?'Resend invite':'Send invite'}</button></div>`}).join('')}</div>`:'<div class="small" style="color:var(--warn);font-weight:600">No planner yet. Add their email and they’ll get an invite.</div>'}
       <div class="row">
         ${t.wire!=='received'?`<button class="btn gold sm" data-act="activate" data-arg="${esc(id)}">Mark wire received</button>`:`<button class="btn ghost sm" data-act="togglecodes" data-arg="${esc(id)}" aria-expanded="${!!open}">${open?'Hide codes':'View codes'}</button>`}
@@ -808,13 +808,10 @@ function adminView(){
       <div class="field"><label for="tresort">Resort / hotel *</label><input id="tresort" name="resort" class="input" required placeholder="Resorts World Las Vegas"><span class="small muted">Shown to members instead of just the city.</span></div>
       <div class="field"><label for="tdates">Dates shown to members</label><input id="tdates" name="dates" class="input" placeholder="Apr 9 – 11, 2027"></div>
       <div class="field"><label for="tstart">Departure date (countdown until the itinerary is set)</label><input id="tstart" name="start" type="date" class="input"></div>
-      <div class="field"><label for="trooms">Number of rooms *</label><input id="trooms" name="rooms" type="number" min="1" max="200" class="input" required placeholder="40"><span class="small muted">Each room holds 2 members + their dates. Guaranteed solo rooms can be added below, and the planner adds the penthouse later if it\u2019s booked.</span></div>
+      <div class="field"><label for="trooms">Number of rooms *</label><input id="trooms" name="rooms" type="number" min="1" max="200" class="input" required placeholder="40"><span class="small muted">Each room holds 2 members + their dates. Solo rooms and the penthouse are added later by the planner.</span></div>
       <div class="field"><label for="ttz">Trip time zone</label><select id="ttz" name="tz" class="input">${[['America/Los_Angeles','Pacific (Las Vegas, California)'],['America/Phoenix','Arizona (Lake Havasu, Scottsdale)'],['America/Denver','Mountain'],['America/Chicago','Central'],['America/New_York','Eastern (Florida)']].map(([v,l])=>`<option value="${v}" ${v==='America/Phoenix'?'selected':''}>${l}</option>`).join('')}</select><span class="small muted">The sign-up window opens and closes at midnight in this time zone.</span></div>
       <div class="field"><label for="tplanners">Planner emails</label><input id="tplanners" name="planners" class="input" autocapitalize="none" spellcheck="false" placeholder="planner@school.edu"><span class="small muted">They sign in with this email. Separate several with commas.</span></div>
     </div>
-    <details class="fold" style="border-top:1px solid var(--line);padding-top:6px"><summary><span><b>Guaranteed solo rooms</b> <span class="small muted">(optional)</span></span><span class="chev" aria-hidden="true"></span></summary>
-      <div class="field" style="margin-top:8px"><label for="tsolo">Members guaranteed their own room</label><textarea id="tsolo" name="solo" class="input" placeholder="One full name per line" autocapitalize="words"></textarea><span class="small muted">Each name holds one room from the block (1 member + their date). The planner sends that member a solo code once they pay, and it can’t be given away in room selection. Leave blank if there are none.</span></div>
-    </details>
     <button class="btn" type="submit">Create trip</button></form>
   ${cards||'<div class="card"><p class="muted" style="margin:0">No trips yet. Create one above.</p></div>'}`;
 }
@@ -854,9 +851,6 @@ const acts={
   canceledityou:()=>{st.editYou=false;render()},
   editdate:()=>{st.editDate=true;render();const c=$('datecard');if(c)c.scrollIntoView()},
   canceleditdate:()=>{st.editDate=false;render()},
-  holdcode:a=>guard(async()=>{const i=String(a).indexOf('|'),tid=a.slice(0,i),payer=a.slice(i+1);if(st.busy==='code')return;
-    st.busy='code';try{const r=await api('add_code',{trip:tid,payer,solo:true});st.lastSoloCode=r.code;await refresh();toast('Solo room code '+r.code+' sent for '+payer+'.')}
-    finally{st.busy='';render()}}),
   ec:a=>{st.openEc=st.openEc===a?'':a;const el=$('plist');if(el)el.innerHTML=peopleList(el.dataset.trip)},
   solo:()=>{const b=$('solobtn'),on=b.getAttribute('aria-pressed')!=='true';b.setAttribute('aria-pressed',on);b.classList.toggle('ghost',!on);$('soloval').value=on?'1':'';$('datefields').hidden=on;$('solonote').hidden=!on;$('datefields').querySelectorAll('input,select').forEach(i=>i.disabled=on)},
   joinroom:a=>guard(async()=>{const s=validSession();if(!s)return;const c=st.codes[s.code]||{},t=st.trips[s.tripId],r=roomById(t,a),me=st.members[s.memberId]||{};if(!r)return;
@@ -939,11 +933,11 @@ const forms={
     await upd(tid,{openDay:o,closeDay:c,roomsUnlock:o,infoDue:c},'Opens '+fmtDay(dayTs(o))+', closes end of '+fmtDay(dayTs(c))+'.')}),
   pin:f=>guard(async()=>{const tid=String(f.get('trip')||''),text=String(f.get('text')||'').trim();if(!st.trips[tid])return;if(!text)return toast('Write the announcement first.');
     await upd(tid,{pinned:{text:text.slice(0,400),at:Date.now()}},'Announcement pinned.')}),
-  you:(f,el)=>guard(async()=>{if(!validSession())return;
+  you:(f,el)=>guard(async()=>{const s=validSession();if(!s)return;if(!youOpen(st.trips[s.tripId]))return toast('Info is closed. Ask your planner.');
     if(!el.checkValidity()){el.reportValidity();return toast('Fill in every required field.')}
     const you=personFrom(f,'y_');if(you.dob==='bad')return toast('That birthday isn’t a real date. Check the month and day.');
     await call('save_you',{you});st.editYou=false;render();toast('Your info is saved.')}),
-  date:(f,el)=>guard(async()=>{const s=validSession();if(!s)return;if(!dateOpen(st.trips[s.tripId]))return toast('Date info is closed. Ask your planner.');
+  date:(f,el)=>guard(async()=>{const s=validSession();if(!s)return;if(!dateOpen(st.trips[s.tripId]))return toast(winState(st.trips[s.tripId])==='closed'?'Date info is closed. Ask your planner.':'Date info opens with room selection.');
     const solo=!!f.get('solo');
     if(!solo&&!el.checkValidity()){el.reportValidity();return toast('Fill in every field for your date, or tap Going solo.')}
     const date=solo?{}:personFrom(f,'d_');if(!solo&&date.dob==='bad')return toast('That birthday isn’t a real date. Check the month and day.');
@@ -957,17 +951,12 @@ const forms={
     finally{st.busy='';render()}}),
   trip:(f,el)=>guard(async()=>{
     if(!el.checkValidity()){el.reportValidity();return toast('Fill in chapter, city, resort and number of rooms.')}
-    const n=Math.max(1,Math.min(200,parseInt(f.get('rooms'),10)||0)), solo=namesFrom(f.get('solo'));
-    if(solo.length>=n)return toast('Leave at least one regular room. You listed '+solo.length+' solo rooms for '+n+' rooms.');
+    const n=Math.max(1,Math.min(200,parseInt(f.get('rooms'),10)||0));
     const planners=String(f.get('planners')||'').split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@'));
     const r=await call('create_trip',{chapter:String(f.get('chapter')).trim(),school:String(f.get('school')||'').trim(),destination:String(f.get('destination')).trim(),resort:String(f.get('resort')||'').trim(),
       dates:String(f.get('dates')||'').trim(),start:String(f.get('start')||''),rooms:n,tz:String(f.get('tz')||''),planners});
-    if(solo.length&&r&&r.trip)await api('update_trip',{trip:r.trip,patch:{soloHolds:solo}}).then(refresh).then(render).catch(e=>toast('Trip created, but the solo rooms didn’t save. Add them on the trip below. '+failMsg(e)));
     const inv=planners.length&&r&&r.trip?await sendInvites(r.trip):null;
-    toast('Trip created. Up to '+((n-solo.length)*2)+' regular codes'+(solo.length?' + '+solo.length+' guaranteed solo room'+(solo.length===1?'':'s'):'')+'.'+(inv?inviteMsg(inv):''))}),
-  soloholds:f=>guard(async()=>{const tid=String(f.get('trip')||''),t=st.trips[tid];if(!t)return;const names=namesFrom(f.get('names'));
-    const free=roomsOf(t).filter(r=>(r.type||'standard')==='standard').length;if(names.length>=free+soloCodes(tid).length&&names.length)return toast('That’s more solo rooms than the block has free.');
-    await upd(tid,{soloHolds:names},names.length?'Guaranteed solo rooms saved.':'Guaranteed solo rooms cleared.')}),
+    toast('Trip created. Up to '+(n*2)+' codes.'+(inv?inviteMsg(inv):''))}),
   planners:f=>guard(async()=>{const tid=String(f.get('trip')||'');const emails=String(f.get('emails')||'').split(/[,;\s]+/).map(x=>x.trim().toLowerCase()).filter(x=>x.includes('@'));
     await call('set_planners',{trip:tid,emails});
     if(!emails.length)return toast('Planners removed.');
