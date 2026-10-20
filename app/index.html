@@ -326,10 +326,10 @@ function staffView(){
   return `<div class="join">
     <div class="tm">FORMAL WISE · STAFF</div>
     <h1 class="big">Planner <em>sign in.</em></h1>
-    <p class="muted" style="margin:0;font-size:16px">Use the email Formal Wise has on file for your chapter. We’ll email you a code, no password needed.</p>
+    <p class="muted" style="margin:0;font-size:16px">Use the personal email (like @gmail.com) Formal Wise has on file for your chapter. We’ll email you a code, no password needed.</p>
     <form data-form="staffemail" class="card" novalidate>
       <div class="field"><label for="semail">Email</label>
-      <input id="semail" name="email" type="email" class="input" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@school.edu" value="${esc(s.email)}" required></div>
+      <input id="semail" name="email" type="email" class="input" autocomplete="email" autocapitalize="none" spellcheck="false" placeholder="you@gmail.com" value="${esc(s.email)}" required></div>
       <button class="btn" type="submit" ${st.busy==='otp'?'disabled':''}>${st.busy==='otp'?'Sending…':'Email me a code'}</button>
     </form>
     <button class="linkbtn small" data-act="joinscreen">Have an access code? Join as a member</button>
@@ -787,7 +787,7 @@ function adminView(){
       ${t.wire==='received'?'<span class="pill ok">Wire received</span>':'<span class="pill warn">Awaiting wire</span>'}</div>
       ${t.wire==='received'?`<div class="small">${codes.length} of ${capacity(t)} codes added by the planner · ${act} redeemed · ${tr} transferred</div>`:'<div class="small muted">The planner can\u2019t add codes until the wire clears.</div>'}
       <form data-form="planners" class="row" style="align-items:flex-end" novalidate><input type="hidden" name="trip" value="${esc(id)}">
-        <div class="field grow" style="min-width:220px"><label for="pl-${esc(id)}">Planner emails (comma-separated)</label><input id="pl-${esc(id)}" name="emails" class="input" autocapitalize="none" spellcheck="false" value="${esc((t.planners||[]).join(', '))}" placeholder="planner@school.edu"></div>
+        <div class="field grow" style="min-width:220px"><label for="pl-${esc(id)}">Planner emails (comma-separated)</label><input id="pl-${esc(id)}" name="emails" class="input" autocapitalize="none" spellcheck="false" value="${esc((t.planners||[]).join(', '))}" placeholder="planner@gmail.com"></div>
         <button class="btn ghost sm" type="submit">Save planners</button></form>
       ${(t.planners||[]).length?`<div class="list" data-planners>${t.planners.map(e=>{const inv=(t.invited||[]).includes(e);return `<div class="li" style="min-height:48px;flex-wrap:wrap"><div class="grow small" style="min-width:180px;overflow-wrap:anywhere"><b>${esc(e)}</b> <span class="pill ${inv?'ok':'warn'}">${inv?'Invite sent':'Not invited yet'}</span></div><button class="btn ghost sm" data-act="invite" data-arg="${esc(id)}|${esc(e)}">${inv?'Resend invite':'Send invite'}</button></div>`}).join('')}</div>`:'<div class="small" style="color:var(--warn);font-weight:600">No planner yet. Add their email and they’ll get an invite.</div>'}
       <div class="row">
@@ -810,7 +810,7 @@ function adminView(){
       <div class="field"><label for="tstart">Departure date (countdown until the itinerary is set)</label><input id="tstart" name="start" type="date" class="input"></div>
       <div class="field"><label for="trooms">Number of rooms *</label><input id="trooms" name="rooms" type="number" min="1" max="200" class="input" required placeholder="40"><span class="small muted">Each room holds 2 members + their dates. Solo rooms and the penthouse are added later by the planner.</span></div>
       <div class="field"><label for="ttz">Trip time zone</label><select id="ttz" name="tz" class="input">${[['America/Los_Angeles','Pacific (Las Vegas, California)'],['America/Phoenix','Arizona (Lake Havasu, Scottsdale)'],['America/Denver','Mountain'],['America/Chicago','Central'],['America/New_York','Eastern (Florida)']].map(([v,l])=>`<option value="${v}" ${v==='America/Phoenix'?'selected':''}>${l}</option>`).join('')}</select><span class="small muted">The sign-up window opens and closes at midnight in this time zone.</span></div>
-      <div class="field"><label for="tplanners">Planner emails</label><input id="tplanners" name="planners" class="input" autocapitalize="none" spellcheck="false" placeholder="planner@school.edu"><span class="small muted">They sign in with this email. Separate several with commas.</span></div>
+      <div class="field"><label for="tplanners">Planner emails</label><input id="tplanners" name="planners" class="input" autocapitalize="none" spellcheck="false" placeholder="planner@gmail.com"><span class="small muted">Use a personal email (like @gmail.com), not a school email. They sign in with it. Separate several with commas.</span></div>
     </div>
     <button class="btn" type="submit">Create trip</button></form>
   ${cards||'<div class="card"><p class="muted" style="margin:0">No trips yet. Create one above.</p></div>'}`;
